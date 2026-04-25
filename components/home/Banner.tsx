@@ -1,0 +1,54 @@
+import Image from "next/image";
+import { Button } from "@/components/ui/button";
+
+export default function Banner() {
+  return (
+    <section className="py-16">
+      <div className="container mx-auto px-6">
+        <div className="grid lg:grid-cols-2 gap-10 items-center">
+          {/* LEFT CONTENT */}
+          <div className="space-y-6">
+            {/* Badge */}
+            <span className="inline-block text-sm px-3 py-1 rounded-full bg-muted text-muted-foreground">
+              Smart Shopping Platform
+            </span>
+
+            {/* Heading */}
+            <h1 className="text-4xl md:text-6xl font-bold tracking-tight leading-tight">
+              Buy Smart.
+              <p className="text-primary"> Live Better.</p>
+            </h1>
+
+            {/* Description */}
+            <p className="text-muted-foreground text-lg max-w-md">
+              SoftBuy is your trusted marketplace for high-quality electronics
+              at unbeatable prices. Discover smarter ways to shop today.
+            </p>
+
+            {/* CTA Buttons */}
+            <div className="flex flex-wrap gap-4">
+              <Button size="lg">Browse Items</Button>
+
+              <Button size="lg" variant="outline">
+                Learn More
+              </Button>
+            </div>
+          </div>
+
+          {/* RIGHT IMAGE */}
+          <div className="relative w-full h-[350px] lg:h-[450px]">
+            <div className="absolute inset-0 rounded-2xl overflow-hidden border bg-muted">
+              <Image
+                src="/banner.jpg"
+                alt="Shopping Banner"
+                fill
+                className="object-cover"
+                priority
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
