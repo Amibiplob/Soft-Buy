@@ -1,9 +1,9 @@
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 
-export default function Banner() {
+export default function BannerSection() {
   return (
-    <section className="py-16">
+    <section className="py-10">
       <div className="container mx-auto px-6">
         <div className="grid lg:grid-cols-2 gap-10 items-center">
           {/* LEFT CONTENT */}
@@ -36,7 +36,7 @@ export default function Banner() {
           </div>
 
           {/* RIGHT IMAGE */}
-          <div className="relative w-full h-[350px] lg:h-[450px]">
+          <div className="relative w-full h-87.5 lg:h-112.5">
             <div className="absolute inset-0 rounded-2xl overflow-hidden border bg-muted">
               <Image
                 src="/banner.jpg"

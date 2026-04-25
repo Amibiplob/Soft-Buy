@@ -22,7 +22,7 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="relative flex py-24 items-center justify-center bg-gradient-to-br from-green-900 via-emerald-800 to-green-700 px-4">
+    <div className="relative flex py-24 items-center justify-center bg-gradient-to-br from-green-100 via-emerald-300 to-green-100 px-4">
       {/* Background glow */}
       <div className="absolute w-96 h-96 bg-emerald-400/20 blur-3xl rounded-full top-10 left-10" />
       <div className="absolute w-72 h-72 bg-green-200/20 blur-2xl rounded-full bottom-10 right-10" />

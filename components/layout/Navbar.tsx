@@ -27,7 +27,7 @@ export default function Navbar() {
   ];
 
   return (
-    <nav className="w-full border-b bg-background">
+    <nav className="w-full border-b">
       <div className="container mx-auto flex items-center justify-between py-4">
         {/* LEFT: Logo */}
         <div className="flex items-center">
