@@ -32,7 +32,7 @@ export default function Navbar() {
         {/* LEFT: Logo */}
         <div className="flex items-center">
           <Link href="/" className="text-lg font-semibold">
-            Soft Buy
+            SoftBuy
           </Link>
         </div>
 
@@ -80,7 +80,7 @@ export default function Navbar() {
               <SheetHeader className="border-b px-6 py-4">
                 <SheetTitle className="flex items-center justify-between text-left">
                   <Link href="/" className="text-lg font-semibold">
-                    Soft Buy
+                    SoftBuy
                   </Link>
                 </SheetTitle>
               </SheetHeader>
