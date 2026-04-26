@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useState } from "react";
 import productsData from "@/public/products.json";
-
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
@@ -15,6 +14,7 @@ import {
 } from "@/components/ui/select";
 import Image from "next/image";
 import { Card, CardContent } from "@/components/ui/card";
+import Link from "next/link";
 
 // ⚡ Debounce
 function useDebounce(value: string, delay = 400) {
@@ -220,7 +220,9 @@ const [cart, setCart] = useState<(Products & { qty: number })[]>([]);
                 </div>
 
                 <div className="flex gap-2 mt-auto">
-                  <Button className="flex-1">View Details</Button>
+                  <Link href={`/products/${product.id}`}>
+                    <Button className="flex-1">View Details</Button>
+                  </Link>
                   <Button className="flex-1" onClick={() => addToCart(product)}>
                     Add to Cart
                   </Button>
