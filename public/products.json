@@ -1,0 +1,112 @@
+[
+  {
+    "id": 1,
+    "title": "Wireless Headphones",
+    "image": "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=500",
+    "details": "High quality wireless headphones with noise cancellation.",
+    "price": 59.99,
+    "rating": 4.5,
+    "category": "Electronics",
+    "added_on": "2026-04-01",
+    "key_features": ["Noise Cancelling", "20h Battery", "Bluetooth 5.0"]
+  },
+  {
+    "id": 2,
+    "title": "Smartphone",
+    "image": "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=500",
+    "details": "Latest smartphone with high performance camera.",
+    "price": 299.99,
+    "rating": 4.6,
+    "category": "Electronics",
+    "added_on": "2026-04-02",
+    "key_features": ["128GB Storage", "Dual Camera", "Fast Charging"]
+  },
+  {
+    "id": 3,
+    "title": "Laptop Backpack",
+    "image": "https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=500",
+    "details": "Durable backpack for laptop and travel.",
+    "price": 39.99,
+    "rating": 4.3,
+    "category": "Accessories",
+    "added_on": "2026-04-03",
+    "key_features": ["Water Resistant", "Laptop Compartment", "Lightweight"]
+  },
+  {
+    "id": 4,
+    "title": "Casual T-Shirt",
+    "image": "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=500",
+    "details": "Comfortable cotton t-shirt for everyday wear.",
+    "price": 14.99,
+    "rating": 4.2,
+    "category": "Fashion",
+    "added_on": "2026-04-04",
+    "key_features": ["100% Cotton", "Breathable", "Slim Fit"]
+  },
+  {
+    "id": 5,
+    "title": "Running Shoes",
+    "image": "https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=500",
+    "details": "Lightweight running shoes for all-day comfort.",
+    "price": 49.99,
+    "rating": 4.4,
+    "category": "Sports",
+    "added_on": "2026-04-05",
+    "key_features": ["Shock Absorption", "Lightweight", "Breathable Mesh"]
+  },
+  {
+    "id": 6,
+    "title": "Smart Watch",
+    "image": "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=500",
+    "details": "Track fitness and notifications on your wrist.",
+    "price": 79.99,
+    "rating": 4.5,
+    "category": "Electronics",
+    "added_on": "2026-04-06",
+    "key_features": ["Heart Rate", "GPS", "Water Resistant"]
+  },
+  {
+    "id": 7,
+    "title": "Bluetooth Speaker",
+    "image": "https://images.unsplash.com/photo-1589003077984-894e133dabab?w=500&auto=format&fit=crop",
+    "details": "Portable speaker with deep bass sound.",
+    "price": 34.99,
+    "rating": 4.4,
+    "category": "Electronics",
+    "added_on": "2026-04-07",
+    "key_features": ["Deep Bass", "Portable", "Wireless"]
+  },
+  {
+    "id": 8,
+    "title": "Handbag",
+    "image": "https://images.unsplash.com/photo-1584917865442-de89df76afd3?w=500",
+    "details": "Stylish handbag for daily use.",
+    "price": 29.99,
+    "rating": 4.3,
+    "category": "Fashion",
+    "added_on": "2026-04-08",
+    "key_features": ["Premium Leather", "Spacious", "Elegant Design"]
+  },
+  {
+    "id": 9,
+    "title": "Gaming Mouse",
+    "image": "https://images.unsplash.com/photo-1527864550417-7fd91fc51a46?w=500",
+    "details": "High precision RGB gaming mouse.",
+    "price": 19.99,
+    "rating": 4.6,
+    "category": "Electronics",
+    "added_on": "2026-04-09",
+    "key_features": ["RGB Lighting", "High DPI", "Ergonomic"]
+  },
+  {
+    "id": 10,
+    "title": "Office Chair",
+    "image": "https://images.unsplash.com/photo-1580480055273-228ff5388ef8?w=500",
+    "details": "Comfortable ergonomic office chair.",
+    "price": 89.99,
+    "rating": 4.5,
+    "category": "Furniture",
+    "added_on": "2026-04-10",
+    "key_features": ["Ergonomic", "Adjustable", "Lumbar Support"]
+  }
+]
