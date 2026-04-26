@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import Image from "next/image";
 
 export default function Footer() {
   return (
@@ -8,7 +9,12 @@ export default function Footer() {
       <div className="container mx-auto px-4 py-12 grid gap-8 md:grid-cols-2 lg:grid-cols-5">
         {/* Brand */}
         <div className="space-y-4">
-          <h2 className="text-xl font-bold">SoftBuy</h2>
+          <Image
+            src="/logo.png"
+            width={100}
+            height={100}
+            alt="Picture of the author"
+          />
           <p className="text-sm text-muted-foreground">
             Your trusted marketplace for quality products at the best prices.
           </p>

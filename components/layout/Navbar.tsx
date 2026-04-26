@@ -18,6 +18,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
+import Image from "next/image";
 
 export default function Navbar() {
   const navLinks = [
@@ -31,8 +32,20 @@ export default function Navbar() {
       <div className="container mx-auto flex items-center justify-between py-4">
         {/* LEFT: Logo */}
         <div className="flex items-center">
-          <Link href="/" className="text-lg font-semibold">
-            SoftBuy
+          <Link href="/" className="flex items-center gap-2 group">
+            {/* Icon */}
+            <Image
+              src="/icon.png"
+              width={20}
+              height={20}
+              alt="Picture of the author"
+            />
+
+            {/* Text */}
+            <h1 className="text-xl font-bold tracking-tight">
+              <span className="text-gray-900">Soft</span>
+              <span className="text-green-600">Buy</span>
+            </h1>
           </Link>
         </div>
 
@@ -79,9 +92,23 @@ export default function Navbar() {
               {/* HEADER */}
               <SheetHeader className="border-b px-6 py-4">
                 <SheetTitle className="flex items-center justify-between text-left">
-                  <Link href="/" className="text-lg font-semibold">
-                    SoftBuy
-                  </Link>
+                  <div className="flex items-center">
+                    <Link href="/" className="flex items-center gap-2 group">
+                      {/* Icon */}
+                      <Image
+                        src="/icon.png"
+                        width={20}
+                        height={20}
+                        alt="Picture of the author"
+                      />
+
+                      {/* Text */}
+                      <h1 className="text-xl font-bold tracking-tight">
+                        <span className="text-gray-900">Soft</span>
+                        <span className="text-green-600">Buy</span>
+                      </h1>
+                    </Link>
+                  </div>
                 </SheetTitle>
               </SheetHeader>
 
