@@ -6,17 +6,25 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 
-export default function LoginPage() {
+export default function RegisterPage() {
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (password !== confirmPassword) {
+      alert("Passwords do not match");
+      return;
+    }
+
     setLoading(true);
 
     setTimeout(() => {
-      console.log({ email, password });
+      console.log({ name, email, password });
       setLoading(false);
     }, 1000);
   };
@@ -29,15 +37,29 @@ export default function LoginPage() {
 
       <Card className="relative w-full max-w-md shadow-2xl border-white/10 bg-white/95 backdrop-blur">
         <CardContent className="pt-6">
-          {/* Branding inside */}
+          {/* Branding */}
           <div className="text-center mb-6">
             <h1 className="text-3xl font-bold text-green-800">SoftBuy</h1>
             <p className="text-sm text-muted-foreground mt-1">
-              Continue your shopping journey
+              Create your account to start shopping
             </p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
+            {/* Name */}
+            <div className="space-y-2">
+              <Label>Full Name</Label>
+              <Input
+                type="text"
+                placeholder="John Doe"
+                className="focus-visible:ring-green-600"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                required
+              />
+            </div>
+
+            {/* Email */}
             <div className="space-y-2">
               <Label>Email</Label>
               <Input
@@ -50,11 +72,12 @@ export default function LoginPage() {
               />
             </div>
 
+            {/* Password */}
             <div className="space-y-2">
               <Label>Password</Label>
               <Input
                 type="password"
-                placeholder="Your Password"
+                placeholder="Create password"
                 className="focus-visible:ring-green-600"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
@@ -62,23 +85,32 @@ export default function LoginPage() {
               />
             </div>
 
-            <div className="flex justify-between text-sm">
-              <a href="#" className="hover:text-green-700 hover:underline">
-                Forgot password?
-              </a>
-              <a
-                href="/register"
-                className="hover:text-green-700 hover:underline"
-              >
-                Sign up
+            {/* Confirm Password */}
+            <div className="space-y-2">
+              <Label>Confirm Password</Label>
+              <Input
+                type="password"
+                placeholder="Confirm password"
+                className="focus-visible:ring-green-600"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                required
+              />
+            </div>
+
+            {/* Links */}
+            <div className="flex justify-end text-sm">
+              <a href="/login" className="hover:text-green-700 hover:underline">
+                Already have an account?
               </a>
             </div>
 
+            {/* Submit */}
             <Button
               className="w-full bg-green-700 hover:bg-green-800"
               disabled={loading}
             >
-              {loading ? "Signing in..." : "Sign in to SoftBuy"}
+              {loading ? "Creating account..." : "Create Account"}
             </Button>
           </form>
 
@@ -89,7 +121,7 @@ export default function LoginPage() {
             <div className="h-px flex-1 bg-border" />
           </div>
 
-          {/* Social login */}
+          {/* Social */}
           <div className="space-y-2">
             <Button variant="outline" className="w-full hover:bg-green-50">
               Continue with Google
