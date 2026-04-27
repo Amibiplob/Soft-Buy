@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import productsData from "@/public/products.json";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
@@ -12,11 +11,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+
 import Image from "next/image";
 import { Card, CardContent } from "@/components/ui/card";
 import Link from "next/link";
 
-// ⚡ Debounce
+// ⚡ Debounce hook
 function useDebounce(value: string, delay = 400) {
   const [debounced, setDebounced] = useState(value);
 
@@ -27,8 +27,11 @@ function useDebounce(value: string, delay = 400) {
 
   return debounced;
 }
+
+// Product type
 type Products = {
-  id: string | number;
+  _id?: string;
+  id?: number;
   title: string;
   category: string;
   price: number;
@@ -36,7 +39,11 @@ type Products = {
   image: string;
   details: string;
 };
+
 export default function ProductsPage() {
+  const [products, setProducts] = useState<Products[]>([]);
+  const [loading, setLoading] = useState(true);
+
   const [search, setSearch] = useState("");
   const debouncedSearch = useDebounce(search);
 
@@ -45,16 +52,34 @@ export default function ProductsPage() {
   const [maxPrice, setMaxPrice] = useState("");
   const [rating, setRating] = useState("all");
 
-  // 🛒 Cart with quantity
-const [cart, setCart] = useState<(Products & { qty: number })[]>([]);
+  // 🛒 Cart
+  const [cart, setCart] = useState<(Products & { qty: number })[]>([]);
 
+  // 📦 Fetch products from API
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        const res = await fetch("/api/products");
+        const data = await res.json();
+        setProducts(data);
+      } catch (err) {
+        console.error("Failed to fetch products", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProducts();
+  }, []);
+
+  // ➕ Add to cart
   const addToCart = (product: Products) => {
     setCart((prev) => {
-      const existing = prev.find((p) => p.id === product.id);
+      const existing = prev.find((p) => p._id === product._id);
 
       if (existing) {
         return prev.map((p) =>
-          p.id === product.id ? { ...p, qty: p.qty + 1 } : p,
+          p._id === product._id ? { ...p, qty: p.qty + 1 } : p,
         );
       }
 
@@ -76,7 +101,8 @@ const [cart, setCart] = useState<(Products & { qty: number })[]>([]);
     setRating("all");
   };
 
-  const filteredProducts = productsData.filter((p: Products) => {
+  // 🔍 Filtering
+  const filteredProducts = products.filter((p) => {
     return (
       p.title.toLowerCase().includes(debouncedSearch.toLowerCase()) &&
       (category === "all" || p.category === category) &&
@@ -86,10 +112,7 @@ const [cart, setCart] = useState<(Products & { qty: number })[]>([]);
     );
   });
 
-  const categories = [
-    "all",
-    ...new Set(productsData.map((p: Products) => p.category)),
-  ];
+  const categories = ["all", ...new Set(products.map((p) => p.category))];
 
   return (
     <div className="container py-6 px-5 md:px-0 mx-auto space-y-6">
@@ -102,138 +125,117 @@ const [cart, setCart] = useState<(Products & { qty: number })[]>([]);
       {/* Filters */}
       <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
         {/* Search */}
-        <div className="space-y-1 w-full">
-          <label className="text-sm font-medium">Search</label>
-          <Input
-            className="w-full"
-            placeholder="Search products..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
-        </div>
+        <Input
+          placeholder="Search products..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
 
         {/* Category */}
-        <div className="space-y-1 w-full">
-          <label className="text-sm font-medium">Category</label>
-          <Select onValueChange={setCategory} value={category}>
-            <SelectTrigger className="w-full">
-              <SelectValue placeholder="Category" />
-            </SelectTrigger>
-            <SelectContent>
-              {categories.map((cat) => (
-                <SelectItem key={cat} value={cat}>
-                  {cat}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+        <Select onValueChange={setCategory} value={category}>
+          <SelectTrigger>
+            <SelectValue placeholder="Category" />
+          </SelectTrigger>
+          <SelectContent>
+            {categories.map((cat) => (
+              <SelectItem key={cat} value={cat}>
+                {cat}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
 
         {/* Min Price */}
-        <div className="space-y-1 w-full">
-          <label className="text-sm font-medium">Min Price</label>
-          <Input
-            className="w-full"
-            type="number"
-            placeholder="0"
-            value={minPrice}
-            min="0"
-            onChange={(e) => setMinPrice(e.target.value)}
-          />
-        </div>
+        <Input
+          type="number"
+          placeholder="Min Price"
+          value={minPrice}
+          onChange={(e) => setMinPrice(e.target.value)}
+        />
 
         {/* Max Price */}
-        <div className="space-y-1 w-full">
-          <label className="text-sm font-medium">Max Price</label>
-          <Input
-            className="w-full"
-            type="number"
-            placeholder="1000"
-            value={maxPrice}
-            min="0"
-            onChange={(e) => setMaxPrice(e.target.value)}
-          />
-        </div>
+        <Input
+          type="number"
+          placeholder="Max Price"
+          value={maxPrice}
+          onChange={(e) => setMaxPrice(e.target.value)}
+        />
 
         {/* Rating */}
-        <div className="space-y-1 w-full">
-          <label className="text-sm font-medium">Rating</label>
-          <Select onValueChange={setRating} value={rating}>
-            <SelectTrigger className="w-full">
-              <SelectValue placeholder="Rating" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Ratings</SelectItem>
-              <SelectItem value="4">4★ & above</SelectItem>
-              <SelectItem value="3">3★ & above</SelectItem>
-              <SelectItem value="2">2★ & above</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
+        <Select onValueChange={setRating} value={rating}>
+          <SelectTrigger>
+            <SelectValue placeholder="Rating" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Ratings</SelectItem>
+            <SelectItem value="4">4★ & above</SelectItem>
+            <SelectItem value="3">3★ & above</SelectItem>
+            <SelectItem value="2">2★ & above</SelectItem>
+          </SelectContent>
+        </Select>
 
         {/* Reset */}
-        <div className="flex items-end">
-          <Button
-            onClick={resetFilters}
-            variant="destructive"
-            className="w-full"
-          >
-            Reset
-          </Button>
-        </div>
+        <Button onClick={resetFilters} variant="destructive">
+          Reset
+        </Button>
       </div>
 
       {/* Products */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-        {filteredProducts.length > 0 ? (
-          filteredProducts.map((product: Products) => (
-            <Card
-              key={product.id}
-              className="rounded-xl shadow-sm hover:shadow-md transition"
-            >
-              <CardContent className="p-4 space-y-3 flex flex-col h-full">
-                <div className="relative w-full h-48">
-                  <Image
-                    src={product.image}
-                    alt={product.title}
-                    fill
-                    className="object-cover rounded-xl"
-                  />
-                </div>
+      {loading ? (
+        <p className="text-center">Loading products...</p>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+          {filteredProducts.length > 0 ? (
+            filteredProducts.map((product) => (
+              <Card
+                key={product._id || product.id}
+                className="rounded-xl shadow-sm hover:shadow-md transition"
+              >
+                <CardContent className="p-4 space-y-3 flex flex-col h-full">
+                  <div className="relative w-full h-48">
+                    <Image
+                      src={product.image}
+                      alt={product.title}
+                      fill
+                      className="object-cover rounded-xl"
+                    />
+                  </div>
 
-                <h2 className="font-semibold text-lg truncate">
-                  {product.title}
-                </h2>
+                  <h2 className="font-semibold text-lg truncate">
+                    {product.title}
+                  </h2>
 
-                <p className="text-sm text-muted-foreground line-clamp-2">
-                  {product.details}
-                </p>
+                  <p className="text-sm text-muted-foreground line-clamp-2">
+                    {product.details}
+                  </p>
 
-                <div className="flex items-center justify-between">
-                  <span className="font-bold text-primary whitespace-nowrap">
-                    ${product.price}
-                  </span>
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold text-primary">
+                      ${product.price}
+                    </span>
+                    <span>⭐ {product.rating}</span>
+                  </div>
 
-                  <span className="text-sm whitespace-nowrap">
-                    ⭐ {product.rating}
-                  </span>
-                </div>
+                  <div className="flex gap-2 mt-auto">
+                    <Link href={`/products/${product._id || product.id}`}>
+                      <Button className="flex-1">View</Button>
+                    </Link>
 
-                <div className="flex gap-2 mt-auto">
-                  <Link href={`/products/${product.id}`}>
-                    <Button className="flex-1">View Details</Button>
-                  </Link>
-                  <Button className="flex-1" onClick={() => addToCart(product)}>
-                    Add to Cart
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          ))
-        ) : (
-          <p>No products found.</p>
-        )}
-      </div>
+                    <Button
+                      className="flex-1"
+                      onClick={() => addToCart(product)}
+                    >
+                      Add
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            ))
+          ) : (
+            <p>No products found</p>
+          )}
+        </div>
+      )}
     </div>
   );
 }
