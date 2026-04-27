@@ -1,15 +1,15 @@
 "use client";
-import Image from "next/image";
-import { notFound, useParams } from "next/navigation";
-import productsData from "@/public/products.json";
 
+import Image from "next/image";
+import { useEffect, useState } from "react";
+import { useParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import Link from "next/link";
 
 type Product = {
-  id: number;
+  _id?: string;
   title: string;
   image: string;
   details: string;
@@ -22,27 +22,42 @@ type Product = {
 
 export default function ProductPage() {
   const params = useParams();
-  const product = productsData.find((p: Product) => p.id === Number(params.id));
+  const id = params.id as string;
 
-  if (!product) return notFound();
+  const [product, setProduct] = useState<Product | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchProduct = async () => {
+      try {
+        const res = await fetch(`/api/products/${id}`);
+        if (!res.ok) throw new Error("Not found");
+
+        const data = await res.json();
+        setProduct(data);
+      } catch (err) {
+        setProduct(null);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProduct();
+  }, [id]);
+
+  if (loading) return <p className="p-6">Loading...</p>;
+  if (!product) return <p className="p-6">Product not found</p>;
 
   return (
-    <div className="container mx-auto py-6 px-4 md:px-0 space-y-6">
-      {/* Back Button */}
-
-      <Link
-        href={"/products"}
-        className="flex items-center gap-2  transition-all"
-      >
-        <Button variant="outline" className=" hover:bg-gray-200 transition-all">
-          ← Back to Items
-        </Button>
+    <div className="container mx-auto py-6 px-4 space-y-6">
+      {/* Back */}
+      <Link href="/products">
+        <Button variant="outline">← Back to Items</Button>
       </Link>
 
-      {/* Main Product Section */}
+      {/* Product */}
       <div className="grid md:grid-cols-2 gap-8 items-center">
-        {/* Image Section */}
-        <Card className="shadow-lg rounded-lg transition-all hover:shadow-xl ">
+        <Card className="shadow-lg rounded-lg">
           <Image
             src={product.image}
             alt={product.title}
@@ -52,15 +67,10 @@ export default function ProductPage() {
           />
         </Card>
 
-        {/* Info Section */}
         <div className="space-y-6">
-          <h1 className="text-3xl font-semibold text-gray-800">
-            {product.title}
-          </h1>
+          <h1 className="text-3xl font-semibold">{product.title}</h1>
 
-          <p className="text-2xl font-semibold text-green-600">
-            ${product.price}
-          </p>
+          <p className="text-2xl font-bold text-green-600">${product.price}</p>
 
           <p className="text-sm text-muted-foreground">
             Category: {product.category}
@@ -70,70 +80,24 @@ export default function ProductPage() {
             Added on {product.added_on}
           </p>
 
-          <Separator className="my-4" />
+          <Separator />
 
-          <p className="text-gray-700">{product.details}</p>
+          <p>{product.details}</p>
 
-          {/* Key Features */}
           <div>
-            <h3 className="font-semibold mt-4 mb-2">Key Features</h3>
-            <ul className="list-disc pl-5 space-y-1 text-sm">
-              {product.key_features.map((f, i) => (
+            <h3 className="font-semibold mb-2">Key Features</h3>
+            <ul className="list-disc pl-5">
+              {product.key_features?.map((f, i) => (
                 <li key={i}>{f}</li>
               ))}
             </ul>
           </div>
 
-          {/* Rating */}
-          <div className="flex gap-2 items-center mt-4">
-            <span className="text-yellow-500 font-semibold">
-              ⭐ {product.rating}
-            </span>
-          </div>
+          <p className="text-yellow-500 font-semibold">⭐ {product.rating}</p>
 
-          {/* Add to Cart Button */}
-          <Button className="mt-6 w-full bg-green-600 hover:bg-green-700 transition-all duration-200">
+          <Button className="w-full bg-green-600 hover:bg-green-700">
             Add to Cart
           </Button>
-        </div>
-      </div>
-
-      {/* Related Items Section */}
-      <div>
-        <h2 className="text-xl font-bold mt-12 mb-4">Related Items</h2>
-
-        <div className="grid sm:grid-cols-2 md:grid-cols-4 gap-6">
-          {productsData
-            .filter((p) => p.id !== product.id)
-            .slice(0, 4)
-            .map((item) => (
-              <Card
-                key={item.id}
-                className="p-4 space-y-1 hover:shadow-lg transition-all rounded-lg"
-              >
-                {/* Image */}
-                <div className="h-48 w-full bg-gray-200 rounded-md overflow-hidden">
-                  <Image
-                    src={item.image}
-                    alt={item.title}
-                    width={200}
-                    height={150}
-                    className="object-cover w-full h-full"
-                  />
-                </div>
-
-                {/* Title */}
-                <h3 className="font-medium text-lg">{item.title}</h3>
-
-                {/* Rating */}
-                <p className="text-sm text-muted-foreground">
-                  ⭐ {item.rating}
-                </p>
-
-                {/* Price */}
-                <p className="font-semibold">${item.price}</p>
-              </Card>
-            ))}
         </div>
       </div>
     </div>

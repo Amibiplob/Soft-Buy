@@ -217,7 +217,7 @@ export default function ProductsPage() {
                   </div>
 
                   <div className="flex gap-2 mt-auto">
-                    <Link href={`/products/${product._id || product.id}`}>
+                    <Link href={`/products/${product._id}`}>
                       <Button className="flex-1">View</Button>
                     </Link>
 
