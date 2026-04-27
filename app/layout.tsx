@@ -34,7 +34,9 @@ export default function RootLayout({
       <body className="min-h-screen flex flex-col bg-green-50">
         <AuthProvider>
           <Navbar />
-          {children}
+          <main className="pt-14">
+            {children}
+          </main>
           <Footer />
         </AuthProvider>
       </body>
