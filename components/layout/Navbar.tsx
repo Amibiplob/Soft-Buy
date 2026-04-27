@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Menu } from "lucide-react";
+import { ArrowUpRight, CirclePlus, Menu } from "lucide-react";
 import { useAuth } from "@/components/AuthProvider";
 import { Button } from "@/components/ui/button";
 import {
@@ -19,12 +19,7 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import Image from "next/image";
-import {
-  BadgeCheckIcon,
-  BellIcon,
-  CreditCardIcon,
-  LogOutIcon,
-} from "lucide-react";
+import { LogOutIcon } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -43,7 +38,7 @@ export default function Navbar() {
   const { user, loading } = useAuth();
   const router = useRouter();
 
-  if (loading) return <p>Loading...</p>;
+
 
   const handleLogout = async () => {
     try {
@@ -80,7 +75,6 @@ export default function Navbar() {
             </h1>
           </Link>
         </div>
-
         {/* CENTER: Nav Links (Desktop) */}
         <div className="hidden lg:flex flex-1 justify-center">
           <NavigationMenu>
@@ -100,46 +94,73 @@ export default function Navbar() {
             </NavigationMenuList>
           </NavigationMenu>
         </div>
+        {loading ? (
+          <p>Loading...</p>
+        ) : user ? (
+          <div className="hidden lg:flex">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="rounded-full">
+                  <Avatar>
+                    <AvatarImage src="icon.png" alt="user" />
+                    <AvatarFallback>User</AvatarFallback>
+                  </Avatar>
+                </Button>
+              </DropdownMenuTrigger>
 
-        {user ? (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="rounded-full">
-                <Avatar>
-                  <AvatarImage src="icon.png" alt="user" />
-                  <AvatarFallback>User</AvatarFallback>
-                </Avatar>
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuGroup>
-                <DropdownMenuLabel>Hi, {user.displayName}</DropdownMenuLabel>
-                <DropdownMenuItem>
-                  <Link href="/products/add">Add Products</Link>
+              <DropdownMenuContent align="end" className="w-44">
+                <DropdownMenuGroup>
+                  <DropdownMenuLabel>Hi, {user.displayName}</DropdownMenuLabel>
+
+                  <DropdownMenuSeparator />
+
+                  <DropdownMenuItem asChild>
+                    <Link
+                      href="/products/add"
+                      className="flex items-center gap-2"
+                    >
+                      <CirclePlus className="w-4 h-4" />
+                      Add Products
+                    </Link>
+                  </DropdownMenuItem>
+
+                  <DropdownMenuSeparator />
+
+                  <DropdownMenuItem asChild>
+                    <Link
+                      href="/products/manage"
+                      className="flex items-center gap-2"
+                    >
+                      <ArrowUpRight className="w-4 h-4" />
+                      Manage Products
+                    </Link>
+                  </DropdownMenuItem>
+                </DropdownMenuGroup>
+
+                <DropdownMenuSeparator />
+
+                <DropdownMenuItem
+                  onClick={handleLogout}
+                  className="text-red-500"
+                >
+                  <LogOutIcon className="w-4 h-4 mr-2" />
+                  Sign Out
                 </DropdownMenuItem>
-                <DropdownMenuItem>
-                  <Link href="/products/manage">Manage Products</Link>
-                </DropdownMenuItem>
-              </DropdownMenuGroup>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={handleLogout}>
-                <LogOutIcon />
-                Sign Out
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         ) : (
           <div className="hidden lg:flex gap-2">
             <Button variant="outline" size="sm" asChild>
               <Link href="/login">Login</Link>
             </Button>
+
             <Button size="sm" asChild>
               <Link href="/register">Sign Up</Link>
             </Button>
           </div>
         )}
 
-        {/* MOBILE MENU */}
         <div className="lg:hidden flex items-center">
           <Sheet>
             <SheetTrigger asChild>
@@ -148,34 +169,24 @@ export default function Navbar() {
               </Button>
             </SheetTrigger>
 
-            <SheetContent side="right" className="w-[320px] p-0">
+            <SheetContent side="right" className="w-[320px] p-0 flex flex-col">
               {/* HEADER */}
               <SheetHeader className="border-b px-6 py-4">
                 <SheetTitle className="flex items-center justify-between text-left">
-                  <div className="flex items-center">
-                    <Link href="/" className="flex items-center gap-2 group">
-                      {/* Icon */}
-                      <Image
-                        src="/icon.png"
-                        width={20}
-                        height={20}
-                        alt="Picture of the author"
-                      />
-
-                      {/* Text */}
-                      <h1 className="text-xl font-bold tracking-tight">
-                        <span className="text-gray-900">Soft</span>
-                        <span className="text-green-600">Buy</span>
-                      </h1>
-                    </Link>
-                  </div>
+                  <Link href="/" className="flex items-center gap-2">
+                    <Image src="/icon.png" width={20} height={20} alt="logo" />
+                    <h1 className="text-xl font-bold tracking-tight">
+                      <span className="text-gray-900">Soft</span>
+                      <span className="text-green-600">Buy</span>
+                    </h1>
+                  </Link>
                 </SheetTitle>
               </SheetHeader>
 
               {/* BODY */}
-              <div className="flex flex-col px-6 py-6">
+              <div className="flex flex-col flex-1 px-6 py-6">
                 {/* NAV LINKS */}
-                <div className="flex flex-col gap-2">
+                <div className="flex flex-col gap-1">
                   {navLinks.map((link) => (
                     <Link
                       key={link.title}
@@ -191,19 +202,49 @@ export default function Navbar() {
                 <div className="my-6 h-px bg-border" />
 
                 {/* AUTH */}
-                <div className="flex flex-col gap-3">
-                  <Button
-                    variant="outline"
-                    className="w-full justify-center"
-                    asChild
-                  >
-                    <Link href="/login">Login</Link>
-                  </Button>
+                {user ? (
+                  <div className="flex flex-col gap-1">
+                    {/* USER INFO */}
+                    <div className="px-3 py-2 text-sm font-medium text-muted-foreground">
+                      Hi, {user.displayName}
+                    </div>
 
-                  <Button className="w-full justify-center" asChild>
-                    <Link href="/register">Sign Up</Link>
-                  </Button>
-                </div>
+                    {/* ACTIONS */}
+                    <Link
+                      href="/products/add"
+                      className="flex items-center gap-2 px-3 py-2 rounded-md text-sm hover:bg-muted transition"
+                    >
+                      <CirclePlus className="w-4 h-4" />
+                      Add Products
+                    </Link>
+
+                    <Link
+                      href="/products/manage"
+                      className="flex items-center gap-2 px-3 py-2 rounded-md text-sm hover:bg-muted transition"
+                    >
+                      <ArrowUpRight className="w-4 h-4" />
+                      Manage Products
+                    </Link>
+
+                    <button
+                      onClick={handleLogout}
+                      className="flex items-center gap-2 px-3 py-2 rounded-md text-sm hover:bg-muted transition text-red-500"
+                    >
+                      <LogOutIcon className="w-4 h-4" />
+                      Sign Out
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex flex-col gap-3">
+                    <Button variant="outline" className="w-full" asChild>
+                      <Link href="/login">Login</Link>
+                    </Button>
+
+                    <Button className="w-full" asChild>
+                      <Link href="/register">Sign Up</Link>
+                    </Button>
+                  </div>
+                )}
               </div>
             </SheetContent>
           </Sheet>
