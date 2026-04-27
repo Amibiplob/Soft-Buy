@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { Menu } from "lucide-react";
-
+import { useAuth } from "@/components/AuthProvider";
 import { Button } from "@/components/ui/button";
 import {
   NavigationMenu,
@@ -20,7 +20,23 @@ import {
 } from "@/components/ui/sheet";
 import Image from "next/image";
 
+import { logout } from "@/lib/auth";
+import { useRouter } from "next/navigation";
+
 export default function Navbar() {
+  const { user, loading } = useAuth();
+  const router = useRouter();
+
+  if (loading) return <p>Loading...</p>;
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+      router.push("/login"); // redirect after logout
+    } catch (err) {
+      console.error("Logout failed:", err);
+    }
+  };
   const navLinks = [
     { title: "Home", href: "/" },
     { title: "Products", href: "/products" },
@@ -69,15 +85,21 @@ export default function Navbar() {
           </NavigationMenu>
         </div>
 
-        {/* RIGHT: Auth Buttons (Desktop) */}
-        <div className="hidden lg:flex gap-2">
-          <Button variant="outline" size="sm" asChild>
-            <Link href="/login">Login</Link>
-          </Button>
-          <Button size="sm" asChild>
-            <Link href="/register">Sign Up</Link>
-          </Button>
-        </div>
+        {user ? (
+          <div className="flex gap-4">
+            <p>Hi, {user.displayName}</p>
+            <button onClick={handleLogout}>Logout</button>
+          </div>
+        ) : (
+          <div className="hidden lg:flex gap-2">
+            <Button variant="outline" size="sm" asChild>
+              <Link href="/login">Login</Link>
+            </Button>
+            <Button size="sm" asChild>
+              <Link href="/register">Sign Up</Link>
+            </Button>
+          </div>
+        )}
 
         {/* MOBILE MENU */}
         <div className="lg:hidden flex items-center">

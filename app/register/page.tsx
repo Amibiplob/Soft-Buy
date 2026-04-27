@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
+import { signUp } from "@/lib/auth";
+import { useRouter } from "next/navigation";
 
 export default function RegisterPage() {
   const [name, setName] = useState("");
@@ -12,6 +14,7 @@ export default function RegisterPage() {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -23,10 +26,14 @@ export default function RegisterPage() {
 
     setLoading(true);
 
-    setTimeout(() => {
-      console.log({ name, email, password });
-      setLoading(false);
-    }, 1000);
+    try {
+      await signUp(name, email, password);
+      router.push("/");
+    } catch (err) {
+      console.error(err);
+    }
+
+    setLoading(false);
   };
 
   return (
