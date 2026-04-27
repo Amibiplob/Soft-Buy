@@ -1,12 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import { signUp } from "@/lib/auth";
 import { useRouter } from "next/navigation";
+import { useAuth } from "@/components/AuthProvider";
+import Link from "next/link";
 
 export default function RegisterPage() {
   const [name, setName] = useState("");
@@ -15,6 +17,13 @@ export default function RegisterPage() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const router = useRouter();
+  const { user, loading: authLoading } = useAuth();
+
+  useEffect(() => {
+    if (!authLoading && user) {
+      router.replace("/");
+    }
+  }, [user, authLoading, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -31,9 +40,10 @@ export default function RegisterPage() {
       router.push("/");
     } catch (err) {
       console.error(err);
+      alert("Signup failed");
+    } finally {
+      setLoading(false);
     }
-
-    setLoading(false);
   };
 
   return (
@@ -107,9 +117,12 @@ export default function RegisterPage() {
 
             {/* Links */}
             <div className="flex justify-end text-sm">
-              <a href="/login" className="hover:text-green-700 hover:underline">
+              <Link
+                href="/login"
+                className="hover:text-green-700 hover:underline"
+              >
                 Already have an account?
-              </a>
+              </Link>
             </div>
 
             {/* Submit */}
