@@ -54,7 +54,7 @@ export default function AboutPage() {
         </div>
 
         {/* RIGHT IMAGE */}
-        <div className="relative w-full h-[400px] lg:h-[500px]">
+        <div className="relative w-full h-100 lg:h-125">
           <Image
             src="/about-softbuy.png"
             alt="SoftBuy About"

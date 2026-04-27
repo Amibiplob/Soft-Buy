@@ -63,7 +63,7 @@ export default function ProductPage() {
             alt={product.title}
             width={500}
             height={500}
-            className="rounded-xl object-cover max-h-[400px] w-full"
+            className="rounded-xl object-cover max-h-100 w-full"
           />
         </Card>
 
