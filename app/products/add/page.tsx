@@ -1,9 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import { getAuth } from "firebase/auth";
 
 type Item = {
-  id: number;
   title: string;
   image: string;
   details: string;
@@ -34,6 +34,7 @@ export default function AddProductsPage() {
   });
 
   const [message, setMessage] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
 
   const handleChange = (
     e: React.ChangeEvent<
@@ -46,48 +47,81 @@ export default function AddProductsPage() {
     });
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    const newItem: Item = {
-      id: Date.now(),
-      title: formData.title,
-      image: formData.image,
-      details: formData.details,
-      price: parseFloat(formData.price),
-      rating: parseFloat(formData.rating) || 0,
-      category: formData.category,
-      added_on: new Date().toISOString().split("T")[0],
-      key_features: formData.key_features
-        .split(",")
-        .map((f) => f.trim())
-        .filter(Boolean),
-    };
+    setLoading(true);
+    setMessage(null);
 
-    console.log("✅ New Item:", newItem);
-    setMessage("✅ Item added successfully!");
+    try {
+      const auth = getAuth();
+      const user = auth.currentUser;
 
-    setFormData({
-      title: "",
-      image: "",
-      details: "",
-      price: "",
-      rating: "",
-      category: "",
-      key_features: "",
-    });
+      if (!user) {
+        setMessage("❌ Please login first");
+        setLoading(false);
+        return;
+      }
+
+      const token = await user.getIdToken();
+
+      const newItem: Item = {
+        title: formData.title,
+        image: formData.image,
+        details: formData.details,
+        price: parseFloat(formData.price) || 0,
+        rating: parseFloat(formData.rating) || 0,
+        category: formData.category,
+        added_on: new Date().toISOString().split("T")[0],
+        key_features: formData.key_features
+          .split(",")
+          .map((f) => f.trim())
+          .filter(Boolean),
+      };
+
+      const res = await fetch("/api/products", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(newItem),
+      });
+
+      if (!res.ok) {
+        throw new Error("Failed to save product");
+      }
+
+      setMessage("✅ Item added successfully!");
+
+      setFormData({
+        title: "",
+        image: "",
+        details: "",
+        price: "",
+        rating: "",
+        category: "",
+        key_features: "",
+      });
+
+      // auto clear message
+      setTimeout(() => setMessage(null), 3000);
+    } catch (err) {
+      console.error(err);
+      setMessage("❌ Failed to add item");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <div className="max-w-3xl mx-auto p-6 bg-white shadow rounded-xl">
       <h1 className="text-2xl font-bold mb-6">Add Product</h1>
-
       {message && (
         <div className="mb-4 p-3 bg-green-100 text-green-700 rounded">
           {message}
         </div>
       )}
-
       <form
         onSubmit={handleSubmit}
         className="grid grid-cols-1 md:grid-cols-2 gap-4"
@@ -195,9 +229,10 @@ export default function AddProductsPage() {
         <div className="md:col-span-2">
           <button
             type="submit"
-            className="w-full bg-blue-600 text-white py-2 rounded"
+            disabled={loading}
+            className="w-full bg-blue-600 text-white py-2 rounded disabled:opacity-50"
           >
-            Submit Item
+            {loading ? "Submitting..." : "Submit Item"}
           </button>
         </div>
       </form>
