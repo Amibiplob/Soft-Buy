@@ -115,12 +115,10 @@ export default function Navbar() {
               <DropdownMenuGroup>
                 <DropdownMenuLabel>Hi, {user.displayName}</DropdownMenuLabel>
                 <DropdownMenuItem>
-                  <CreditCardIcon />
-                  Add Products
+                  <Link href="/products/add">Add Products</Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem>
-                  <BellIcon />
-                  Manage Products
+                  <Link href="/products/manage">Manage Products</Link>
                 </DropdownMenuItem>
               </DropdownMenuGroup>
               <DropdownMenuSeparator />
