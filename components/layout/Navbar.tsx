@@ -19,6 +19,22 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import Image from "next/image";
+import {
+  BadgeCheckIcon,
+  BellIcon,
+  CreditCardIcon,
+  LogOutIcon,
+} from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 import { logout } from "@/lib/auth";
 import { useRouter } from "next/navigation";
@@ -86,10 +102,34 @@ export default function Navbar() {
         </div>
 
         {user ? (
-          <div className="flex gap-4">
-            <p>Hi, {user.displayName}</p>
-            <button onClick={handleLogout}>Logout</button>
-          </div>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="rounded-full">
+                <Avatar>
+                  <AvatarImage src="icon.png" alt="user" />
+                  <AvatarFallback>User</AvatarFallback>
+                </Avatar>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuGroup>
+                <DropdownMenuLabel>Hi, {user.displayName}</DropdownMenuLabel>
+                <DropdownMenuItem>
+                  <CreditCardIcon />
+                  Add Products
+                </DropdownMenuItem>
+                <DropdownMenuItem>
+                  <BellIcon />
+                  Manage Products
+                </DropdownMenuItem>
+              </DropdownMenuGroup>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={handleLogout}>
+                <LogOutIcon />
+                Sign Out
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         ) : (
           <div className="hidden lg:flex gap-2">
             <Button variant="outline" size="sm" asChild>
