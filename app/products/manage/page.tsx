@@ -11,6 +11,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useEffect, useState } from "react";
+import Link from "next/link";
 
 type Product = {
   _id: string;
@@ -100,8 +101,8 @@ export default function ManageProductsPage() {
                   <TableCell>{item.added_on}</TableCell>
 
                   <TableCell className="text-right space-x-2">
-                    <Button variant="outline" size="sm">
-                      View
+                    <Button variant="outline" size="sm" asChild>
+                      <Link href={`/products/${item._id}`}>View</Link>
                     </Button>
 
                     <Button
