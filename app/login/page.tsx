@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
-import { signIn } from "@/lib/auth";
+import { signIn, signInWithGoogle } from "@/lib/auth";
 import { useAuth } from "@/components/AuthProvider";
 import { useRouter } from "next/navigation";
 import { Eye, EyeOff } from "lucide-react";
@@ -42,6 +42,19 @@ export default function LoginPage() {
       setLoading(false);
     }, 1000);
   };
+
+
+  const handleGoogleSignIn = async () => {
+    try {
+      const user = await signInWithGoogle();
+      console.log("Logged in with Google:", user);
+      // You can redirect or handle the user info here
+      router.replace("/"); // Redirect to the home page or wherever necessary
+    } catch (error) {
+      console.error("Error during Google sign-in:", error);
+    }
+  };
+
 
   return (
     <div className="relative flex py-24 items-center justify-center bg-gradient-to-br from-green-100 via-emerald-300 to-green-100 px-4">
@@ -126,7 +139,11 @@ export default function LoginPage() {
 
           {/* Social login */}
           <div className="space-y-2">
-            <Button variant="outline" className="w-full hover:bg-green-50">
+            <Button
+              variant="outline"
+              className="w-full hover:bg-green-50"
+              onClick={handleGoogleSignIn}
+            >
               Continue with Google
             </Button>
           </div>

@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
-import { signUp } from "@/lib/auth";
+import { signInWithGoogle, signUp } from "@/lib/auth";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/components/AuthProvider";
 import Link from "next/link";
@@ -46,6 +46,17 @@ export default function RegisterPage() {
       alert("Signup failed");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleGoogleSignIn = async () => {
+    try {
+      const user = await signInWithGoogle();
+      console.log("Logged in with Google:", user);
+      // You can redirect or handle the user info here
+      router.replace("/"); // Redirect to the home page or wherever necessary
+    } catch (error) {
+      console.error("Error during Google sign-in:", error);
     }
   };
 
@@ -161,7 +172,11 @@ export default function RegisterPage() {
 
           {/* Social */}
           <div className="space-y-2">
-            <Button variant="outline" className="w-full hover:bg-green-50">
+            <Button
+              variant="outline"
+              className="w-full hover:bg-green-50"
+              onClick={handleGoogleSignIn}
+            >
               Continue with Google
             </Button>
           </div>
