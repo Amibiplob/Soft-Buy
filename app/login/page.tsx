@@ -9,6 +9,7 @@ import { signIn } from "@/lib/auth";
 import { useAuth } from "@/components/AuthProvider";
 import { useRouter } from "next/navigation";
 import { Eye, EyeOff } from "lucide-react";
+import Link from "next/link";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -94,15 +95,18 @@ export default function LoginPage() {
             </div>
 
             <div className="flex justify-between text-sm">
-              <a href="#" className="hover:text-green-700 hover:underline">
+              <Link
+                href="/forgot-password"
+                className="hover:text-green-700 hover:underline"
+              >
                 Forgot password?
-              </a>
-              <a
+              </Link>
+              <Link
                 href="/register"
                 className="hover:text-green-700 hover:underline"
               >
                 Sign up
-              </a>
+              </Link>
             </div>
 
             <Button
