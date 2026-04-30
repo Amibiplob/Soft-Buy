@@ -5,32 +5,30 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { resetPassword } from "@/lib/auth";
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null); // State for displaying messages
 
-  const router = useRouter();
 
-  const handleForgotPasswordSubmit = async (e: React.FormEvent) => {
+
+  const handlePasswordReset = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
-    // try {
-    //   // Simulate API call to send password reset email
-    //   await sendPasswordResetEmail(email);
-    //   setMessage("Check your inbox for a password reset link.");
-    // } catch (err) {
-    //   console.error(err);
-    //   setMessage("Failed to send reset email. Please try again.");
-    // } finally {
-    //   setLoading(false);
-    // }
-  };
+    try {
+      await resetPassword(email); // Call the resetPassword function
+      setMessage("Password reset email sent! Check your inbox.");
+    } catch (err) {
+      setMessage("Error sending password reset email. Please try again.");
+      console.error(err);
+    }
 
+    setLoading(false);
+  };
 
   return (
     <div className="relative flex py-24 items-center justify-center bg-gradient-to-br from-green-100 via-emerald-300 to-green-100 px-4">
@@ -48,7 +46,7 @@ export default function ForgotPasswordPage() {
             </p>
           </div>
 
-          <form onSubmit={handleForgotPasswordSubmit} className="space-y-4">
+          <form onSubmit={handlePasswordReset} className="space-y-4">
             <div className="space-y-2">
               <Label>Email</Label>
               <Input

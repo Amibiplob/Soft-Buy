@@ -5,6 +5,7 @@ import {
   updateProfile,
   GoogleAuthProvider,
   signInWithPopup,
+  sendPasswordResetEmail,
 } from "firebase/auth";
 import { auth } from "./firebase";
 
@@ -45,6 +46,17 @@ export const signInWithGoogle = async () => {
     return user; // Return the user info
   } catch (error) {
     console.error("Google Sign-In Error:", error);
+    throw error; // Throw the error to be handled by the calling component
+  }
+};
+
+// Password Reset Function
+export const resetPassword = async (email: string) => {
+  try {
+    await sendPasswordResetEmail(auth, email); // Send the password reset email
+    console.log("Password reset email sent to:", email);
+  } catch (error) {
+    console.error("Password Reset Error:", error);
     throw error; // Throw the error to be handled by the calling component
   }
 };
