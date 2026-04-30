@@ -9,11 +9,14 @@ import { signUp } from "@/lib/auth";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/components/AuthProvider";
 import Link from "next/link";
+import { Eye, EyeOff } from "lucide-react";
 
 export default function RegisterPage() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const router = useRouter();
@@ -90,29 +93,44 @@ export default function RegisterPage() {
             </div>
 
             {/* Password */}
-            <div className="space-y-2">
+            <div className="relative space-y-2">
               <Label>Password</Label>
               <Input
-                type="password"
+                type={showPassword ? "text" : "password"}
                 placeholder="Create password"
                 className="focus-visible:ring-green-600"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
               />
+
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-7/12 -translate-y-1/2 text-gray-500"
+              >
+                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
             </div>
 
             {/* Confirm Password */}
-            <div className="space-y-2">
+            <div className="relative space-y-2">
               <Label>Confirm Password</Label>
               <Input
-                type="password"
+                type={showConfirmPassword ? "text" : "password"}
                 placeholder="Confirm password"
                 className="focus-visible:ring-green-600"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 required
               />
+              <button
+                type="button"
+                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                className="absolute right-3 top-7/12 -translate-y-1/2 text-gray-500"
+              >
+                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
             </div>
 
             {/* Links */}
