@@ -1,7 +1,16 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowUpRight, CirclePlus, Menu } from "lucide-react";
+import {
+  ArrowUpRight,
+  Bell,
+  CirclePlus,
+  Menu,
+  Search,
+  ShoppingCart,
+  LogOutIcon,
+} from "lucide-react";
+
 import { useAuth } from "@/components/AuthProvider";
 import { Button } from "@/components/ui/button";
 import {
@@ -18,9 +27,10 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
+
 import Image from "next/image";
-import { LogOutIcon } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -38,16 +48,15 @@ export default function Navbar() {
   const { user, loading } = useAuth();
   const router = useRouter();
 
-
-
   const handleLogout = async () => {
     try {
       await logout();
-      router.push("/login"); // redirect after logout
+      router.push("/login");
     } catch (err) {
       console.error("Logout failed:", err);
     }
   };
+
   const navLinks = [
     { title: "Home", href: "/" },
     { title: "Products", href: "/products" },
@@ -56,26 +65,19 @@ export default function Navbar() {
 
   return (
     <nav className="w-full border-b sticky top-0 z-50 bg-slate-50">
-      <div className="container mx-auto flex items-center justify-between py-4">
+      <div className="container mx-auto flex items-center py-4">
         {/* LEFT: Logo */}
         <div className="flex items-center">
-          <Link href="/" className="flex items-center gap-2 group">
-            {/* Icon */}
-            <Image
-              src="/icon.png"
-              width={20}
-              height={20}
-              alt="Picture of the author"
-            />
-
-            {/* Text */}
+          <Link href="/" className="flex items-center gap-2">
+            <Image src="/icon.png" width={20} height={20} alt="logo" />
             <h1 className="text-xl font-bold tracking-tight">
               <span className="text-gray-900">Soft</span>
               <span className="text-green-600">Buy</span>
             </h1>
           </Link>
         </div>
-        {/* CENTER: Nav Links (Desktop) */}
+
+        {/* CENTER: Nav Links */}
         <div className="hidden lg:flex flex-1 justify-center">
           <NavigationMenu>
             <NavigationMenuList>
@@ -84,7 +86,7 @@ export default function Navbar() {
                   <NavigationMenuLink asChild>
                     <Link
                       href={link.href}
-                      className="px-4 py-2 text-sm font-medium hover:text-primary"
+                      className="px-4 py-2 text-sm font-medium hover:text-primary transition"
                     >
                       {link.title}
                     </Link>
@@ -94,160 +96,176 @@ export default function Navbar() {
             </NavigationMenuList>
           </NavigationMenu>
         </div>
-        {loading ? (
-          <p>Loading...</p>
-        ) : user ? (
-          <div className="hidden lg:flex">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="rounded-full">
-                  <Avatar>
-                    <AvatarImage src="icon.png" alt="user" />
-                    <AvatarFallback>User</AvatarFallback>
-                  </Avatar>
-                </Button>
-              </DropdownMenuTrigger>
 
-              <DropdownMenuContent align="end" className="w-44">
-                <DropdownMenuGroup>
-                  <DropdownMenuLabel>Hi, {user.displayName}</DropdownMenuLabel>
+        {/* RIGHT SIDE */}
+        <div className="flex items-center gap-3 ml-auto">
+          {/* Icons */}
+          <Search className="w-5 h-5 cursor-pointer hover:text-primary transition" />
+          <ShoppingCart className="w-5 h-5 cursor-pointer hover:text-primary transition" />
+          <Bell className="w-5 h-5 cursor-pointer hover:text-primary transition" />
 
-                  <DropdownMenuSeparator />
+          {/* Auth */}
+          {loading ? (
+            <p className="text-sm">Loading...</p>
+          ) : user ? (
+            <div className="hidden lg:flex">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon" className="rounded-full">
+                    <Avatar>
+                      <AvatarImage src="icon.png" alt="user" />
+                      <AvatarFallback>User</AvatarFallback>
+                    </Avatar>
+                  </Button>
+                </DropdownMenuTrigger>
 
-                  <DropdownMenuItem asChild>
-                    <Link
-                      href="/products/add"
-                      className="flex items-center gap-2"
-                    >
-                      <CirclePlus className="w-4 h-4" />
-                      Add Products
-                    </Link>
-                  </DropdownMenuItem>
-
-                  <DropdownMenuSeparator />
-
-                  <DropdownMenuItem asChild>
-                    <Link
-                      href="/products/manage"
-                      className="flex items-center gap-2"
-                    >
-                      <ArrowUpRight className="w-4 h-4" />
-                      Manage Products
-                    </Link>
-                  </DropdownMenuItem>
-                </DropdownMenuGroup>
-
-                <DropdownMenuSeparator />
-
-                <DropdownMenuItem
-                  onClick={handleLogout}
-                  className="text-red-500"
-                >
-                  <LogOutIcon className="w-4 h-4 mr-2" />
-                  Sign Out
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-        ) : (
-          <div className="hidden lg:flex gap-2">
-            <Button variant="outline" size="sm" asChild>
-              <Link href="/login">Login</Link>
-            </Button>
-
-            <Button size="sm" asChild>
-              <Link href="/register">Sign Up</Link>
-            </Button>
-          </div>
-        )}
-
-        <div className="lg:hidden flex items-center">
-          <Sheet>
-            <SheetTrigger asChild>
-              <Button variant="outline" size="icon">
-                <Menu className="w-5 h-5" />
-              </Button>
-            </SheetTrigger>
-
-            <SheetContent side="right" className="w-[320px] p-0 flex flex-col">
-              {/* HEADER */}
-              <SheetHeader className="border-b px-6 py-4">
-                <SheetTitle className="flex items-center justify-between text-left">
-                  <Link href="/" className="flex items-center gap-2">
-                    <Image src="/icon.png" width={20} height={20} alt="logo" />
-                    <h1 className="text-xl font-bold tracking-tight">
-                      <span className="text-gray-900">Soft</span>
-                      <span className="text-green-600">Buy</span>
-                    </h1>
-                  </Link>
-                </SheetTitle>
-              </SheetHeader>
-
-              {/* BODY */}
-              <div className="flex flex-col flex-1 px-6 py-6">
-                {/* NAV LINKS */}
-                <div className="flex flex-col gap-1">
-                  {navLinks.map((link) => (
-                    <Link
-                      key={link.title}
-                      href={link.href}
-                      className="rounded-md px-3 py-2 text-base font-medium transition-colors hover:bg-muted hover:text-primary"
-                    >
-                      {link.title}
-                    </Link>
-                  ))}
-                </div>
-
-                {/* DIVIDER */}
-                <div className="my-6 h-px bg-border" />
-
-                {/* AUTH */}
-                {user ? (
-                  <div className="flex flex-col gap-1">
-                    {/* USER INFO */}
-                    <div className="px-3 py-2 text-sm font-medium text-muted-foreground">
+                <DropdownMenuContent align="end" className="w-44">
+                  <DropdownMenuGroup>
+                    <DropdownMenuLabel>
                       Hi, {user.displayName}
+                    </DropdownMenuLabel>
+
+                    <DropdownMenuSeparator />
+
+                    <DropdownMenuItem asChild>
+                      <Link
+                        href="/products/add"
+                        className="flex items-center gap-2"
+                      >
+                        <CirclePlus className="w-4 h-4" />
+                        Add Products
+                      </Link>
+                    </DropdownMenuItem>
+
+                    <DropdownMenuItem asChild>
+                      <Link
+                        href="/products/manage"
+                        className="flex items-center gap-2"
+                      >
+                        <ArrowUpRight className="w-4 h-4" />
+                        Manage Products
+                      </Link>
+                    </DropdownMenuItem>
+                  </DropdownMenuGroup>
+
+                  <DropdownMenuSeparator />
+
+                  <DropdownMenuItem
+                    onClick={handleLogout}
+                    className="text-red-500"
+                  >
+                    <LogOutIcon className="w-4 h-4 mr-2" />
+                    Sign Out
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          ) : (
+            <div className="hidden lg:flex gap-2">
+              <Button variant="outline" size="sm" asChild>
+                <Link href="/login">Login</Link>
+              </Button>
+
+              <Button size="sm" asChild>
+                <Link href="/register">Sign Up</Link>
+              </Button>
+            </div>
+          )}
+
+          {/* Mobile Menu */}
+          <div className="lg:hidden">
+            <Sheet>
+              <SheetTrigger asChild>
+                <Button variant="outline" size="icon">
+                  <Menu className="w-5 h-5" />
+                </Button>
+              </SheetTrigger>
+
+              <SheetContent
+                side="right"
+                className="w-[320px] p-0 flex flex-col"
+              >
+                {/* HEADER */}
+                <SheetHeader className="border-b px-6 py-4">
+                  <SheetTitle className="flex items-center">
+                    <Link href="/" className="flex items-center gap-2">
+                      <Image
+                        src="/icon.png"
+                        width={20}
+                        height={20}
+                        alt="logo"
+                      />
+                      <h1 className="text-xl font-bold tracking-tight">
+                        <span className="text-gray-900">Soft</span>
+                        <span className="text-green-600">Buy</span>
+                      </h1>
+                    </Link>
+                  </SheetTitle>
+                </SheetHeader>
+
+                {/* BODY */}
+                <div className="flex flex-col flex-1 px-6 py-6">
+                  {/* Nav Links */}
+                  <div className="flex flex-col gap-1">
+                    {navLinks.map((link) => (
+                      <Link
+                        key={link.title}
+                        href={link.href}
+                        className="rounded-md px-3 py-2 text-base font-medium hover:bg-muted hover:text-primary transition"
+                      >
+                        {link.title}
+                      </Link>
+                    ))}
+                  </div>
+
+                  <div className="my-6 h-px bg-border" />
+
+                  {/* Auth */}
+                  {user ? (
+                    <div className="flex flex-col gap-1">
+                      <div className="px-3 py-2 text-sm text-muted-foreground">
+                        Hi, {user.displayName}
+                      </div>
+
+                      <Link
+                        href="/products/add"
+                        className="flex items-center gap-2 px-3 py-2 rounded-md text-sm hover:bg-muted"
+                      >
+                        <CirclePlus className="w-4 h-4" />
+                        Add Products
+                      </Link>
+
+                      <Link
+                        href="/products/manage"
+                        className="flex items-center gap-2 px-3 py-2 rounded-md text-sm hover:bg-muted"
+                      >
+                        <ArrowUpRight className="w-4 h-4" />
+                        Manage Products
+                      </Link>
+
+                      <button
+                        onClick={handleLogout}
+                        className="flex items-center gap-2 px-3 py-2 rounded-md text-sm hover:bg-muted text-red-500"
+                      >
+                        <LogOutIcon className="w-4 h-4" />
+                        Sign Out
+                      </button>
                     </div>
+                  ) : (
+                    <div className="flex flex-col gap-3">
+                      <Button variant="outline" className="w-full" asChild>
+                        <Link href="/login">Login</Link>
+                      </Button>
 
-                    {/* ACTIONS */}
-                    <Link
-                      href="/products/add"
-                      className="flex items-center gap-2 px-3 py-2 rounded-md text-sm hover:bg-muted transition"
-                    >
-                      <CirclePlus className="w-4 h-4" />
-                      Add Products
-                    </Link>
-
-                    <Link
-                      href="/products/manage"
-                      className="flex items-center gap-2 px-3 py-2 rounded-md text-sm hover:bg-muted transition"
-                    >
-                      <ArrowUpRight className="w-4 h-4" />
-                      Manage Products
-                    </Link>
-
-                    <button
-                      onClick={handleLogout}
-                      className="flex items-center gap-2 px-3 py-2 rounded-md text-sm hover:bg-muted transition text-red-500"
-                    >
-                      <LogOutIcon className="w-4 h-4" />
-                      Sign Out
-                    </button>
-                  </div>
-                ) : (
-                  <div className="flex flex-col gap-3">
-                    <Button variant="outline" className="w-full" asChild>
-                      <Link href="/login">Login</Link>
-                    </Button>
-
-                    <Button className="w-full" asChild>
-                      <Link href="/register">Sign Up</Link>
-                    </Button>
-                  </div>
-                )}
-              </div>
-            </SheetContent>
-          </Sheet>
+                      <Button className="w-full" asChild>
+                        <Link href="/register">Sign Up</Link>
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              </SheetContent>
+            </Sheet>
+          </div>
         </div>
       </div>
     </nav>
