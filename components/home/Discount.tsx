@@ -3,6 +3,7 @@
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { Copy, Check } from "lucide-react";
+import Link from "next/link";
 
 export default function DiscountSection() {
   const [copied, setCopied] = useState(false);
@@ -54,9 +55,11 @@ export default function DiscountSection() {
 
         {/* CTA */}
         <div className="mt-10">
-          <Button size="lg" className="px-8">
-            Shop Now
-          </Button>
+          <Link href="/products">
+            <Button size="lg" className="px-8">
+              Shop Now
+            </Button>
+          </Link>
         </div>
       </div>
     </section>

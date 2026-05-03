@@ -1,5 +1,6 @@
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
+import Link from "next/link";
 
 export default function BannerSection() {
   return (
@@ -27,11 +28,14 @@ export default function BannerSection() {
 
             {/* CTA Buttons */}
             <div className="flex flex-wrap gap-4">
-              <Button size="lg">Browse Items</Button>
-
-              <Button size="lg" variant="outline">
-                Learn More
-              </Button>
+              <Link href="/products">
+                <Button size="lg">Browse Products</Button>
+              </Link>
+              <Link href="/about">
+                <Button size="lg" variant="outline">
+                  Learn More
+                </Button>
+              </Link>
             </div>
           </div>
 
