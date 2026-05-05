@@ -1,67 +1,63 @@
-import {
-  createUserWithEmailAndPassword,
-  signInWithEmailAndPassword,
-  signOut,
-  updateProfile,
-  GoogleAuthProvider,
-  signInWithPopup,
-  sendPasswordResetEmail,
-} from "firebase/auth";
-import { auth } from "./firebase";
+import { AuthOptions } from "next-auth";
+import CredentialsProvider from "next-auth/providers/credentials";
+import bcrypt from "bcrypt";
+import clientPromise from "@/lib/db";
 
-// Sign-up function (email and password)
-export const signUp = async (name: string, email: string, password: string) => {
-  const userCredential = await createUserWithEmailAndPassword(
-    auth,
-    email,
-    password,
-  );
+export const authOptions: AuthOptions = {
+  providers: [
+    CredentialsProvider({
+      name: "Credentials",
+      credentials: {
+        email: { label: "Email", type: "text" },
+        password: { label: "Password", type: "password" },
+      },
+      async authorize(credentials) {
+        if (!credentials?.email || !credentials?.password) return null;
 
-  if (auth.currentUser) {
-    // Update the display name for the user
-    await updateProfile(auth.currentUser, {
-      displayName: name,
-    });
+        const client = await clientPromise;
+        const db = client.db();
+        const user = await db.collection("users").findOne({
+          email: credentials.email.toLowerCase(),
+        });
 
-    // Reload the user to ensure displayName is updated
-    await auth.currentUser.reload();
-  }
+        if (!user) return null;
 
-  return userCredential;
-};
+        const isValid = await bcrypt.compare(
+          credentials.password,
+          user.password,
+        );
+        if (!isValid) return null;
 
-// Sign-in function (email and password)
-export const signIn = (email: string, password: string) => {
-  return signInWithEmailAndPassword(auth, email, password);
-};
-
-// Google Sign-In
-export const signInWithGoogle = async () => {
-  const provider = new GoogleAuthProvider(); // Firebase's Google Auth provider
-  try {
-    const result = await signInWithPopup(auth, provider); // Sign-in with Google using a popup
-    const user = result.user; // Get the signed-in user's info
-
-    console.log("Google User Info:", user);
-    return user; // Return the user info
-  } catch (error) {
-    console.error("Google Sign-In Error:", error);
-    throw error; // Throw the error to be handled by the calling component
-  }
-};
-
-// Password Reset Function
-export const resetPassword = async (email: string) => {
-  try {
-    await sendPasswordResetEmail(auth, email); // Send the password reset email
-    console.log("Password reset email sent to:", email);
-  } catch (error) {
-    console.error("Password Reset Error:", error);
-    throw error; // Throw the error to be handled by the calling component
-  }
-};
-
-// Logout function
-export const logout = () => {
-  return signOut(auth); // Signs the user out of the Firebase authentication session
+        return {
+          id: user._id.toString(),
+          name: user.name,
+          email: user.email,
+          role: user.role ?? "user",
+        };
+      },
+    }),
+  ],
+  callbacks: {
+    async jwt({ token, user }) {
+      if (user) {
+        token.id = user.id;
+        token.role = user.role;
+      }
+      return token;
+    },
+    async session({ session, token }) {
+      if (token && session.user) {
+        session.user.id = token.id as string;
+        session.user.role = token.role as string;
+      }
+      return session;
+    },
+  },
+  pages: {
+    signIn: "/login", // change this to match your actual login page route
+  },
+  session: {
+    strategy: "jwt",
+  },
+  secret: process.env.NEXTAUTH_SECRET,
 };

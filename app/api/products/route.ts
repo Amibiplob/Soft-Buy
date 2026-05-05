@@ -1,26 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
-import clientPromise from "@/lib/mongodb";
-import admin from "@/lib/firebaseAdmin";
+import clientPromise from "@/lib/db";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth"; // your NextAuth config
 import { Product } from "@/types/product";
-
-async function getUser(req: NextRequest) {
-  const authHeader = req.headers.get("authorization");
-
-  if (!authHeader?.startsWith("Bearer ")) return null;
-
-  const token = authHeader.split("Bearer ")[1];
-
-  try {
-    return await admin.auth().verifyIdToken(token);
-  } catch {
-    return null;
-  }
-}
 
 // CREATE product
 export async function POST(req: NextRequest) {
-  const user = await getUser(req);
-  if (!user) {
+  const session = await getServerSession(authOptions);
+
+  if (!session || !session.user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -31,7 +19,7 @@ export async function POST(req: NextRequest) {
 
   const product: Product = {
     ...body,
-    userId: user.uid,
+    userId: session.user.id, // make sure you add this in your NextAuth callbacks
   };
 
   const result = await db.collection<Product>("products").insertOne(product);

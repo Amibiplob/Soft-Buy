@@ -6,27 +6,33 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import Link from "next/link";
-import { resetPassword } from "@/lib/auth";
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
+  const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null); // State for displaying messages
 
-
-
   const handlePasswordReset = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError("");
     setLoading(true);
+    const res = await fetch("/api/auth/forgot-password", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email }),
+    });
 
-    try {
-      await resetPassword(email); // Call the resetPassword function
-      setMessage("Password reset email sent! Check your inbox.");
-    } catch (err) {
+    const data = await res.json();
+    setLoading(false);
+
+    if (!res.ok) {
+      setError(data.error ?? "Something went wrong.");
       setMessage("Error sending password reset email. Please try again.");
-      console.error(err);
+      return;
     }
 
+    setMessage("Password reset email sent! Check your inbox and spam folder");
     setLoading(false);
   };
 

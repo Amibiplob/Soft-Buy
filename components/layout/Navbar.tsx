@@ -1,6 +1,9 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
+import { useRouter } from "next/navigation";
+import { useSession, signOut } from "next-auth/react";
 import {
   ArrowUpRight,
   Bell,
@@ -8,10 +11,9 @@ import {
   Menu,
   Search,
   ShoppingCart,
-  LogOutIcon,
+  LogOut,
 } from "lucide-react";
 
-import { useAuth } from "@/components/AuthProvider";
 import { Button } from "@/components/ui/button";
 import {
   NavigationMenu,
@@ -19,7 +21,6 @@ import {
   NavigationMenuList,
   NavigationMenuLink,
 } from "@/components/ui/navigation-menu";
-
 import {
   Sheet,
   SheetContent,
@@ -27,10 +28,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
-
-import Image from "next/image";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -41,41 +39,45 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-import { logout } from "@/lib/auth";
-import { useRouter } from "next/navigation";
+const navLinks = [
+  { title: "Home", href: "/" },
+  { title: "Products", href: "/products" },
+  { title: "About", href: "/about" },
+];
 
 export default function Navbar() {
-  const { user, loading } = useAuth();
+  const { data: session, status } = useSession();
   const router = useRouter();
+  const loading = status === "loading";
+  const user = session?.user;
 
   const handleLogout = async () => {
-    try {
-      await logout();
-      router.push("/login");
-    } catch (err) {
-      console.error("Logout failed:", err);
-    }
+    await signOut({ redirect: false });
+    router.push("/login");
+    router.refresh();
   };
 
-  const navLinks = [
-    { title: "Home", href: "/" },
-    { title: "Products", href: "/products" },
-    { title: "About", href: "/about" },
-  ];
+  // Derive initials for avatar fallback
+  const initials = user?.name
+    ? user.name
+        .split(" ")
+        .map((n) => n[0])
+        .join("")
+        .toUpperCase()
+        .slice(0, 2)
+    : "U";
 
   return (
     <nav className="w-full border-b sticky top-0 z-50 bg-slate-50">
       <div className="container mx-auto flex items-center py-4">
         {/* LEFT: Logo */}
-        <div className="flex items-center">
-          <Link href="/" className="flex items-center gap-2">
-            <Image src="/icon.png" width={20} height={20} alt="logo" />
-            <h1 className="text-xl font-bold tracking-tight">
-              <span className="text-gray-900">Soft</span>
-              <span className="text-green-600">Buy</span>
-            </h1>
-          </Link>
-        </div>
+        <Link href="/" className="flex items-center gap-2">
+          <Image src="/icon.png" width={20} height={20} alt="logo" />
+          <span className="text-xl font-bold tracking-tight">
+            <span className="text-gray-900">Soft</span>
+            <span className="text-green-600">Buy</span>
+          </span>
+        </Link>
 
         {/* CENTER: Nav Links */}
         <div className="hidden lg:flex flex-1 justify-center">
@@ -97,36 +99,35 @@ export default function Navbar() {
           </NavigationMenu>
         </div>
 
-        {/* RIGHT SIDE */}
+        {/* RIGHT: Icons + Auth */}
         <div className="flex items-center gap-3 ml-auto">
-          {/* Icons */}
           <Search className="w-5 h-5 cursor-pointer hover:text-primary transition" />
           <ShoppingCart className="w-5 h-5 cursor-pointer hover:text-primary transition" />
           <Bell className="w-5 h-5 cursor-pointer hover:text-primary transition" />
 
-          {/* Auth */}
-          {loading ? (
-            <p className="text-sm">Loading...</p>
-          ) : user ? (
-            <div className="hidden lg:flex">
+          {/* Desktop Auth */}
+          <div className="flex">
+            {loading ? (
+              <div className="w-8 h-8 rounded-full bg-muted animate-pulse" />
+            ) : user ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" size="icon" className="rounded-full">
-                    <Avatar>
-                      <AvatarImage src="icon.png" alt="user" />
-                      <AvatarFallback>User</AvatarFallback>
+                    <Avatar className="w-8 h-8">
+                      <AvatarImage
+                        src={user.image ?? ""}
+                        alt={user.name ?? "user"}
+                      />
+                      <AvatarFallback>{initials}</AvatarFallback>
                     </Avatar>
                   </Button>
                 </DropdownMenuTrigger>
 
-                <DropdownMenuContent align="end" className="w-44">
+                <DropdownMenuContent align="end" className="w-48">
+                  <DropdownMenuLabel>Hi, {user.name}</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+
                   <DropdownMenuGroup>
-                    <DropdownMenuLabel>
-                      Hi, {user.displayName}
-                    </DropdownMenuLabel>
-
-                    <DropdownMenuSeparator />
-
                     <DropdownMenuItem asChild>
                       <Link
                         href="/products/add"
@@ -152,25 +153,24 @@ export default function Navbar() {
 
                   <DropdownMenuItem
                     onClick={handleLogout}
-                    className="text-red-500"
+                    className="text-red-500 focus:text-red-500 cursor-pointer"
                   >
-                    <LogOutIcon className="w-4 h-4 mr-2" />
+                    <LogOut className="w-4 h-4 mr-2" />
                     Sign Out
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
-            </div>
-          ) : (
-            <div className="hidden lg:flex gap-2">
-              <Button variant="outline" size="sm" asChild>
-                <Link href="/login">Login</Link>
-              </Button>
-
-              <Button size="sm" asChild>
-                <Link href="/register">Sign Up</Link>
-              </Button>
-            </div>
-          )}
+            ) : (
+              <div className="flex gap-2">
+                <Button variant="outline" size="sm" asChild>
+                  <Link href="/login">Login</Link>
+                </Button>
+                <Button size="sm" asChild>
+                  <Link href="/register">Sign Up</Link>
+                </Button>
+              </div>
+            )}
+          </div>
 
           {/* Mobile Menu */}
           <div className="lg:hidden">
@@ -185,9 +185,8 @@ export default function Navbar() {
                 side="right"
                 className="w-[320px] p-0 flex flex-col"
               >
-                {/* HEADER */}
                 <SheetHeader className="border-b px-6 py-4">
-                  <SheetTitle className="flex items-center">
+                  <SheetTitle asChild>
                     <Link href="/" className="flex items-center gap-2">
                       <Image
                         src="/icon.png"
@@ -195,15 +194,14 @@ export default function Navbar() {
                         height={20}
                         alt="logo"
                       />
-                      <h1 className="text-xl font-bold tracking-tight">
+                      <span className="text-xl font-bold tracking-tight">
                         <span className="text-gray-900">Soft</span>
                         <span className="text-green-600">Buy</span>
-                      </h1>
+                      </span>
                     </Link>
                   </SheetTitle>
                 </SheetHeader>
 
-                {/* BODY */}
                 <div className="flex flex-col flex-1 px-6 py-6">
                   {/* Nav Links */}
                   <div className="flex flex-col gap-1">
@@ -220,16 +218,25 @@ export default function Navbar() {
 
                   <div className="my-6 h-px bg-border" />
 
-                  {/* Auth */}
-                  {user ? (
+                  {/* Mobile Auth */}
+                  {loading ? (
+                    <div className="h-10 w-full rounded-md bg-muted animate-pulse" />
+                  ) : user ? (
                     <div className="flex flex-col gap-1">
-                      <div className="px-3 py-2 text-sm text-muted-foreground">
-                        Hi, {user.displayName}
+                      <div className="flex items-center gap-3 px-3 py-2 mb-1">
+                        <Avatar className="w-8 h-8">
+                          <AvatarImage
+                            src={user.image ?? ""}
+                            alt={user.name ?? ""}
+                          />
+                          <AvatarFallback>{initials}</AvatarFallback>
+                        </Avatar>
+                        <span className="text-sm font-medium">{user.name}</span>
                       </div>
 
                       <Link
                         href="/products/add"
-                        className="flex items-center gap-2 px-3 py-2 rounded-md text-sm hover:bg-muted"
+                        className="flex items-center gap-2 px-3 py-2 rounded-md text-sm hover:bg-muted transition"
                       >
                         <CirclePlus className="w-4 h-4" />
                         Add Products
@@ -237,7 +244,7 @@ export default function Navbar() {
 
                       <Link
                         href="/products/manage"
-                        className="flex items-center gap-2 px-3 py-2 rounded-md text-sm hover:bg-muted"
+                        className="flex items-center gap-2 px-3 py-2 rounded-md text-sm hover:bg-muted transition"
                       >
                         <ArrowUpRight className="w-4 h-4" />
                         Manage Products
@@ -245,9 +252,9 @@ export default function Navbar() {
 
                       <button
                         onClick={handleLogout}
-                        className="flex items-center gap-2 px-3 py-2 rounded-md text-sm hover:bg-muted text-red-500"
+                        className="flex items-center gap-2 px-3 py-2 rounded-md text-sm hover:bg-muted text-red-500 transition"
                       >
-                        <LogOutIcon className="w-4 h-4" />
+                        <LogOut className="w-4 h-4" />
                         Sign Out
                       </button>
                     </div>
@@ -256,7 +263,6 @@ export default function Navbar() {
                       <Button variant="outline" className="w-full" asChild>
                         <Link href="/login">Login</Link>
                       </Button>
-
                       <Button className="w-full" asChild>
                         <Link href="/register">Sign Up</Link>
                       </Button>

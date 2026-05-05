@@ -5,59 +5,51 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
-import { signInWithGoogle, signUp } from "@/lib/auth";
-import { useRouter } from "next/navigation";
-import { useAuth } from "@/components/AuthProvider";
-import Link from "next/link";
-import { Eye, EyeOff } from "lucide-react";
 
-export default function RegisterPage() {
-  const [name, setName] = useState("");
+import { useRouter } from "next/navigation";
+import { Eye, EyeOff } from "lucide-react";
+import Link from "next/link";
+import { signIn } from "next-auth/react";
+
+export default function LoginPage() {
+  const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [confirmPassword, setConfirmPassword] = useState("");
+  const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const router = useRouter();
-  const { user, loading: authLoading } = useAuth();
 
-  useEffect(() => {
-    if (!authLoading && user) {
-      router.replace("/");
-    }
-  }, [user, authLoading, router]);
-
-  const handleSubmit = async (e: React.FormEvent) => {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    setError("");
+    setLoading(true);
 
-    if (password !== confirmPassword) {
-      alert("Passwords do not match");
+    const result = await signIn("credentials", {
+      email,
+      password,
+      redirect: false,
+    });
+
+    setLoading(false);
+
+    if (result?.error) {
+      setError("Invalid email or password.");
       return;
     }
 
-    setLoading(true);
-
-    try {
-      await signUp(name, email, password);
-      router.push("/");
-    } catch (err) {
-      console.error(err);
-      alert("Signup failed");
-    } finally {
-      setLoading(false);
-    }
-  };
+    router.push("/");
+    router.refresh();
+  }
 
   const handleGoogleSignIn = async () => {
-    try {
-      const user = await signInWithGoogle();
-      console.log("Logged in with Google:", user);
-      // You can redirect or handle the user info here
-      router.replace("/"); // Redirect to the home page or wherever necessary
-    } catch (error) {
-      console.error("Error during Google sign-in:", error);
-    }
+    // try {
+    //   const user = await signInWithGoogle();
+    //   console.log("Logged in with Google:", user);
+    //   // You can redirect or handle the user info here
+    //   router.replace("/"); // Redirect to the home page or wherever necessary
+    // } catch (error) {
+    //   console.error("Error during Google sign-in:", error);
+    // }
   };
 
   return (
@@ -68,28 +60,15 @@ export default function RegisterPage() {
 
       <Card className="relative w-full max-w-md shadow-2xl border-white/10 bg-white/95 backdrop-blur">
         <CardContent className="pt-6">
-          {/* Branding */}
+          {/* Branding inside */}
           <div className="text-center mb-6">
             <h1 className="text-3xl font-bold text-green-800">SoftBuy</h1>
             <p className="text-sm text-muted-foreground mt-1">
-              Create your account to start shopping
+              Continue your shopping journey
             </p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Name */}
-            <div className="space-y-2">
-              <Label>Full Name</Label>
-              <Input
-                type="text"
-                placeholder="John Doe"
-                className="focus-visible:ring-green-600"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                required
-              />
-            </div>
-
             {/* Email */}
             <div className="space-y-2">
               <Label>Email</Label>
@@ -124,42 +103,26 @@ export default function RegisterPage() {
               </button>
             </div>
 
-            {/* Confirm Password */}
-            <div className="relative space-y-2">
-              <Label>Confirm Password</Label>
-              <Input
-                type={showConfirmPassword ? "text" : "password"}
-                placeholder="Confirm password"
-                className="focus-visible:ring-green-600"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                required
-              />
-              <button
-                type="button"
-                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                className="absolute right-3 top-7/12 -translate-y-1/2 text-gray-500"
-              >
-                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-              </button>
-            </div>
-
-            {/* Links */}
-            <div className="flex justify-end text-sm">
+            <div className="flex justify-between text-sm">
               <Link
-                href="/login"
+                href="/forgot-password"
                 className="hover:text-green-700 hover:underline"
               >
-                Already have an account?
+                Forgot password?
+              </Link>
+              <Link
+                href="/register"
+                className="hover:text-green-700 hover:underline"
+              >
+                Sign up
               </Link>
             </div>
 
-            {/* Submit */}
             <Button
               className="w-full bg-green-700 hover:bg-green-800"
               disabled={loading}
             >
-              {loading ? "Creating account..." : "Create Account"}
+              {loading ? "Signing in..." : "Sign in to SoftBuy"}
             </Button>
           </form>
 
@@ -170,7 +133,7 @@ export default function RegisterPage() {
             <div className="h-px flex-1 bg-border" />
           </div>
 
-          {/* Social */}
+          {/* Social login */}
           <div className="space-y-2">
             <Button
               variant="outline"

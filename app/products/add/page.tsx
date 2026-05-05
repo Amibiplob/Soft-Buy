@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { getAuth } from "firebase/auth";
+
 
 type Item = {
   title: string;
@@ -54,7 +54,7 @@ export default function AddProductsPage() {
     setMessage(null);
 
     try {
-      const auth = getAuth();
+   
       const user = auth.currentUser;
 
       if (!user) {

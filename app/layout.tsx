@@ -4,7 +4,8 @@ import "./globals.css";
 
 import Footer from "@/components/layout/Footer";
 import Navbar from "@/components/layout/Navbar";
-import { AuthProvider } from "@/components/AuthProvider";
+import SessionProviderWrapper from "@/components/SessionProviderWrapper";
+import { Toaster } from "@/components/ui/sonner";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -32,13 +33,11 @@ export default function RootLayout({
       className={`${inter.variable} ${jetbrainsMono.variable} h-full antialiased`}
     >
       <body className="min-h-screen flex flex-col bg-green-50">
-        <AuthProvider>
+        <SessionProviderWrapper>
           <Navbar />
-        
-            {children}
-       
+          {children} <Toaster />
           <Footer />
-        </AuthProvider>
+        </SessionProviderWrapper>
       </body>
     </html>
   );

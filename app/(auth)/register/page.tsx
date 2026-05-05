@@ -1,60 +1,71 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
-import { signIn, signInWithGoogle } from "@/lib/auth";
-import { useAuth } from "@/components/AuthProvider";
-import { useRouter } from "next/navigation";
-import { Eye, EyeOff } from "lucide-react";
-import Link from "next/link";
 
-export default function LoginPage() {
+import { useRouter } from "next/navigation";
+
+import Link from "next/link";
+import { Eye, EyeOff } from "lucide-react";
+import { toast } from "sonner";
+
+export default function RegisterPage() {
+  const router = useRouter();
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-
-  const router = useRouter();
-  const { user, loading: authLoading } = useAuth();
-
-  useEffect(() => {
-    if (!authLoading && user) {
-      router.replace("/");
-    }
-  }, [user, authLoading, router]);
+  const [error, setError] = useState("");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
 
-    try {
-      const user = await signIn(email, password);
-      console.log("Logged in:", user);
-    } catch (err) {
-      console.error(err);
+    if (password !== confirmPassword) {
+      alert("Passwords do not match");
+      return;
     }
 
-    setTimeout(() => {
-      console.log({ email, password });
-      setLoading(false);
-    }, 1000);
-  };
+    if (password.length < 6) {
+      setError("Password must be at least 6 characters.");
+      return;
+    }
 
+    setLoading(true);
+    setError("");
+
+    const res = await fetch("/api/auth/register", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name, email, password }),
+    });
+
+    const data = await res.json();
+    setLoading(false);
+
+    if (!res.ok) {
+      setError(data.error ?? "Registration failed.");
+      return;
+    }
+    toast.success("Acount created succesfully");
+    router.push("/");
+  };
 
   const handleGoogleSignIn = async () => {
-    try {
-      const user = await signInWithGoogle();
-      console.log("Logged in with Google:", user);
-      // You can redirect or handle the user info here
-      router.replace("/"); // Redirect to the home page or wherever necessary
-    } catch (error) {
-      console.error("Error during Google sign-in:", error);
-    }
+    // try {
+    //   const user = await signInWithGoogle();
+    //   console.log("Logged in with Google:", user);
+    //   // You can redirect or handle the user info here
+    //   router.replace("/"); // Redirect to the home page or wherever necessary
+    // } catch (error) {
+    //   console.error("Error during Google sign-in:", error);
+    // }
   };
-
 
   return (
     <div className="relative flex py-24 items-center justify-center bg-gradient-to-br from-green-100 via-emerald-300 to-green-100 px-4">
@@ -64,15 +75,28 @@ export default function LoginPage() {
 
       <Card className="relative w-full max-w-md shadow-2xl border-white/10 bg-white/95 backdrop-blur">
         <CardContent className="pt-6">
-          {/* Branding inside */}
+          {/* Branding */}
           <div className="text-center mb-6">
             <h1 className="text-3xl font-bold text-green-800">SoftBuy</h1>
             <p className="text-sm text-muted-foreground mt-1">
-              Continue your shopping journey
+              Create your account to start shopping
             </p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
+            {/* Name */}
+            <div className="space-y-2">
+              <Label>Full Name</Label>
+              <Input
+                type="text"
+                placeholder="John Doe"
+                className="focus-visible:ring-green-600"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                required
+              />
+            </div>
+
             {/* Email */}
             <div className="space-y-2">
               <Label>Email</Label>
@@ -107,26 +131,42 @@ export default function LoginPage() {
               </button>
             </div>
 
-            <div className="flex justify-between text-sm">
+            {/* Confirm Password */}
+            <div className="relative space-y-2">
+              <Label>Confirm Password</Label>
+              <Input
+                type={showConfirmPassword ? "text" : "password"}
+                placeholder="Confirm password"
+                className="focus-visible:ring-green-600"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                required
+              />
+              <button
+                type="button"
+                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                className="absolute right-3 top-7/12 -translate-y-1/2 text-gray-500"
+              >
+                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
+            </div>
+
+            {/* Links */}
+            <div className="flex justify-end text-sm">
               <Link
-                href="/forgot-password"
+                href="/login"
                 className="hover:text-green-700 hover:underline"
               >
-                Forgot password?
-              </Link>
-              <Link
-                href="/register"
-                className="hover:text-green-700 hover:underline"
-              >
-                Sign up
+                Already have an account?
               </Link>
             </div>
 
+            {/* Submit */}
             <Button
               className="w-full bg-green-700 hover:bg-green-800"
               disabled={loading}
             >
-              {loading ? "Signing in..." : "Sign in to SoftBuy"}
+              {loading ? "Creating account..." : "Create Account"}
             </Button>
           </form>
 
@@ -137,7 +177,7 @@ export default function LoginPage() {
             <div className="h-px flex-1 bg-border" />
           </div>
 
-          {/* Social login */}
+          {/* Social */}
           <div className="space-y-2">
             <Button
               variant="outline"

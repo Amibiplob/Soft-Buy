@@ -8,5 +8,5 @@ export interface Product {
   category: string;
   added_on: string;
   key_features: string[];
-  userId?: string; // from Firebase
+  userId?: string;
 }
