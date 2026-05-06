@@ -31,7 +31,6 @@ const navItems = [
     icon: CreditCard,
   },
   { label: "Account Settings", href: "/dashboard/account", icon: Settings },
-  { label: "Notifications", href: "/dashboard/notifications", icon: Bell },
   { label: "Reviews", href: "/dashboard/reviews", icon: Star },
 ];
 
