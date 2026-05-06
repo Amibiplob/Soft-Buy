@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
   LayoutDashboard,
   ShoppingBag,
@@ -18,6 +18,7 @@ import {
 import { cn } from "@/lib/utils";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
+import { signOut } from "next-auth/react";
 
 const navItems = [
   { label: "Overview", href: "/dashboard", icon: LayoutDashboard },
@@ -40,7 +41,12 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
-
+  const router = useRouter();
+  const handleLogout = async () => {
+    await signOut({ redirect: false });
+    router.push("/login");
+    router.refresh();
+  };
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="container mx-auto px-4 py-6 flex flex-col md:flex-row gap-6">
@@ -76,6 +82,7 @@ export default function DashboardLayout({
               })}
               <Separator className="my-2" />
               <button
+                onClick={handleLogout}
                 className="flex items-center gap-3 px-4 py-2.5 text-sm font-medium text-red-500 hover:bg-red-50 transition-colors w-full mx-2 rounded-lg"
                 style={{ width: "calc(100% - 16px)" }}
               >

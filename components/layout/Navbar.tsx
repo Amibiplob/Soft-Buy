@@ -130,21 +130,21 @@ export default function Navbar() {
                   <DropdownMenuGroup>
                     <DropdownMenuItem asChild>
                       <Link
-                        href="/products/add"
+                        href="/dashboard"
                         className="flex items-center gap-2"
                       >
-                        <CirclePlus className="w-4 h-4" />
-                        Add Products
+                        <ArrowUpRight className="w-4 h-4" />
+                        Dashboard
                       </Link>
                     </DropdownMenuItem>
 
                     <DropdownMenuItem asChild>
                       <Link
-                        href="/products/manage"
+                        href="/dashboard/orders"
                         className="flex items-center gap-2"
                       >
                         <ArrowUpRight className="w-4 h-4" />
-                        Manage Products
+                        View Orders
                       </Link>
                     </DropdownMenuItem>
                   </DropdownMenuGroup>
