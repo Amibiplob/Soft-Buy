@@ -33,12 +33,11 @@ export default function LoginPage() {
     setLoading(false);
 
     if (result?.error) {
-      setError("Invalid email or password.");
-      return;
+      return setError("Invalid email or password.");
+    } else {
+      router.push("/");
+      router.refresh();
     }
-
-    router.push("/");
-    router.refresh();
   }
 
   const handleGoogleSignIn = async () => {
@@ -117,7 +116,7 @@ export default function LoginPage() {
                 Sign up
               </Link>
             </div>
-
+            {error && <p className="text-sm text-destructive">{error}</p>}
             <Button
               className="w-full bg-green-700 hover:bg-green-800"
               disabled={loading}
