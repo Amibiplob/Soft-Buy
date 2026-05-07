@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
 import {
   Minus,
@@ -14,68 +13,16 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
+import { useCart } from "@/context/CartContext";
+import Image from "next/image";
 
-// ─── Types ────────────────────────────────────────────────────────────────────
 
-interface CartItem {
-  id: number;
-  name: string;
-  price: number;
-  quantity: number;
-  emoji: string;
-  color: string;
-}
 
-// ─── Initial Data ─────────────────────────────────────────────────────────────
-
-const INITIAL_ITEMS: CartItem[] = [
-  {
-    id: 1,
-    name: "Wireless Headphones",
-    price: 59.99,
-    quantity: 1,
-    emoji: "🎧",
-    color: "bg-slate-100",
-  },
-  {
-    id: 2,
-    name: "Smart Watch",
-    price: 89.99,
-    quantity: 1,
-    emoji: "⌚",
-    color: "bg-zinc-100",
-  },
-  {
-    id: 3,
-    name: "Running Shoes",
-    price: 60.99,
-    quantity: 2,
-    emoji: "👟",
-    color: "bg-stone-100",
-  },
-  {
-    id: 4,
-    name: "Travel Backpack",
-    price: 39.99,
-    quantity: 1,
-    emoji: "🎒",
-    color: "bg-slate-100",
-  },
-];
 
 const TAX_RATE = 0.09;
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
-function ProductThumbnail({ emoji, color }: { emoji: string; color: string }) {
-  return (
-    <div
-      className={`w-14 h-14 rounded-xl ${color} flex items-center justify-center text-2xl shrink-0 border border-black/[0.06]`}
-    >
-      {emoji}
-    </div>
-  );
-}
 
 function QuantityControl({
   value,
@@ -126,22 +73,8 @@ function TrustBadge({ icon, label }: { icon: React.ReactNode; label: string }) {
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
 export default function CartPage() {
-  const [items, setItems] = useState<CartItem[]>(INITIAL_ITEMS);
-
-  // ── Mutations ──────────────────────────────────────────────────────────────
-
-  const updateQty = (id: number, delta: number) =>
-    setItems((prev) =>
-      prev.map((item) =>
-        item.id === id
-          ? { ...item, quantity: Math.max(1, item.quantity + delta) }
-          : item,
-      ),
-    );
-
-  const removeItem = (id: number) =>
-    setItems((prev) => prev.filter((item) => item.id !== id));
-
+  const { removeItem, items } = useCart();
+  console.log(items);
   // ── Derived totals ─────────────────────────────────────────────────────────
 
   const subtotal = items.reduce(
@@ -198,7 +131,7 @@ export default function CartPage() {
                   >
                     {/* Product */}
                     <div className="flex items-center gap-3.5">
-                      <ProductThumbnail emoji={item.emoji} color={item.color} />
+                      <Image href={item.image } alt={item.name} />
                       <span className="font-medium text-sm leading-snug">
                         {item.name}
                       </span>
