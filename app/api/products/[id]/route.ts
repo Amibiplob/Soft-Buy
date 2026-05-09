@@ -7,10 +7,10 @@ import { authOptions } from "@/lib/auth";
 // 📦 GET single product
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } },
+  context: { params: Promise<{ id: string }> },
 ) {
   try {
-    const { id } = await params;
+    const { id } = await context.params;
 
     if (!ObjectId.isValid(id)) {
       return NextResponse.json({ error: "Invalid ID" }, { status: 400 });
@@ -36,7 +36,7 @@ export async function GET(
 // 🗑 DELETE product (protected)
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { id: string } },
+  context: { params: Promise<{ id: string }> },
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -45,7 +45,7 @@ export async function DELETE(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { id } = params;
+    const { id } = await context.params;
 
     if (!ObjectId.isValid(id)) {
       return NextResponse.json({ error: "Invalid ID" }, { status: 400 });
@@ -54,7 +54,6 @@ export async function DELETE(
     const client = await clientPromise;
     const db = client.db();
 
-    // 🔒 Optional: ensure user owns the product
     const product = await db.collection("products").findOne({
       _id: new ObjectId(id),
     });
