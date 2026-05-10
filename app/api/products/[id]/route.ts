@@ -4,11 +4,12 @@ import { ObjectId } from "mongodb";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 
+type Context = {
+  params: Promise<{ id: string }>;
+};
+
 // 📦 GET single product
-export async function GET(
-  req: NextRequest,
-  context: { params: Promise<{ id: string }> },
-) {
+export async function GET(req: NextRequest, context: Context) {
   try {
     const { id } = await context.params;
 
@@ -33,11 +34,8 @@ export async function GET(
   }
 }
 
-// 🗑 DELETE product (protected)
-export async function DELETE(
-  req: NextRequest,
-  context: { params: Promise<{ id: string }> },
-) {
+// 🗑 DELETE product
+export async function DELETE(req: NextRequest, context: Context) {
   try {
     const session = await getServerSession(authOptions);
 
