@@ -1,10 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { Heart, ShoppingCart, Trash2 } from "lucide-react";
+import { Heart, ShoppingCart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { toast } from "sonner";
 
 interface WishlistItem {
   id: number;

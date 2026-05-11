@@ -16,13 +16,9 @@ import { Separator } from "@/components/ui/separator";
 import { useCart } from "@/context/CartContext";
 import Image from "next/image";
 
-
-
-
 const TAX_RATE = 0.09;
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
-
 
 function QuantityControl({
   value,
@@ -73,8 +69,8 @@ function TrustBadge({ icon, label }: { icon: React.ReactNode; label: string }) {
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
 export default function CartPage() {
-  const { removeItem, items } = useCart();
-  console.log(items);
+  const { removeItem, setQuantity, items } = useCart();
+
   // ── Derived totals ─────────────────────────────────────────────────────────
 
   const subtotal = items.reduce(
@@ -87,6 +83,14 @@ export default function CartPage() {
 
   const fmt = (n: number) =>
     n.toLocaleString("en-US", { style: "currency", currency: "USD" });
+
+  // ── Helpers ────────────────────────────────────────────────────────────────
+
+  const updateQty = (id: string, delta: number) => {
+    const item = items.find((i) => i.id === id);
+    if (!item) return;
+    setQuantity(id, item.quantity + delta);
+  };
 
   // ── Render ─────────────────────────────────────────────────────────────────
 
@@ -131,7 +135,14 @@ export default function CartPage() {
                   >
                     {/* Product */}
                     <div className="flex items-center gap-3.5">
-                      <Image href={item.image } alt={item.name} />
+                      {item.image && (
+                        <Image
+                          src={item.image}
+                          alt={item.name}
+                          width={40}
+                          height={40}
+                        />
+                      )}
                       <span className="font-medium text-sm leading-snug">
                         {item.name}
                       </span>

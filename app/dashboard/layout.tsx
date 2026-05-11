@@ -9,14 +9,11 @@ import {
   MapPin,
   CreditCard,
   Settings,
-  Bell,
   Star,
   LogOut,
-  ShoppingCart,
-  Package,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+
 import { Separator } from "@/components/ui/separator";
 import { signOut } from "next-auth/react";
 

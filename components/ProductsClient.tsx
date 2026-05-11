@@ -64,7 +64,7 @@ export default function ProductsClient({ products }: { products: Product[] }) {
   }, [products, search, category, sort]);
 
   const inCart = (id: string) => items.some((i) => i.id === id);
-
+  console.log(filtered);
   return (
     <>
       {/* Filters — no cart count here */}
@@ -175,7 +175,7 @@ export default function ProductsClient({ products }: { products: Product[] }) {
                         id: product._id,
                         name: product.title,
                         price: product.price,
-                        image: product.image,
+                        image: product.image ?? "",
                       })
                     }
                   >

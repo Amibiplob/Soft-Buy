@@ -1,42 +1,45 @@
 import { NextRequest, NextResponse } from "next/server";
 import clientPromise from "@/lib/db";
 import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth"; // your NextAuth config
+import { authOptions } from "@/lib/auth";
 import { Product } from "@/types/product";
 
-// CREATE product
-export async function POST(req: NextRequest) {
-  const session = await getServerSession(authOptions);
+export async function GET() {
+  try {
+    const client = await clientPromise;
+    const db = client.db();
 
-  if (!session || !session.user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const products = await db
+      .collection<Product>("products")
+      .find()
+      .sort({ added_on: -1 })
+      .toArray();
+
+    return NextResponse.json(products);
+  } catch (err) {
+    console.error(err);
+    return NextResponse.json({ error: "Server error" }, { status: 500 });
   }
-
-  const body: Product = await req.json();
-
-  const client = await clientPromise;
-  const db = client.db();
-
-  const product: Product = {
-    ...body,
-    userId: session.user.id, // make sure you add this in your NextAuth callbacks
-  };
-
-  const result = await db.collection<Product>("products").insertOne(product);
-
-  return NextResponse.json(result);
 }
 
-// GET all products
-export async function GET() {
-  const client = await clientPromise;
-  const db = client.db();
+export async function POST(req: NextRequest) {
+  try {
+    const session = await getServerSession(authOptions);
 
-  const products = await db
-    .collection<Product>("products")
-    .find()
-    .sort({ added_on: -1 })
-    .toArray();
+    if (!session?.user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
 
-  return NextResponse.json(products);
+    const client = await clientPromise;
+    const db = client.db();
+
+    const body: Product = await req.json();
+    const product: Product = { ...body, userId: session.user.id };
+
+    const result = await db.collection<Product>("products").insertOne(product);
+    return NextResponse.json(result, { status: 201 });
+  } catch (err) {
+    console.error(err);
+    return NextResponse.json({ error: "Server error" }, { status: 500 });
+  }
 }

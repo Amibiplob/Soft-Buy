@@ -8,8 +8,7 @@ type Context = {
   params: Promise<{ id: string }>;
 };
 
-// 📦 GET single product
-export async function GET(req: NextRequest, context: Context) {
+export async function GET(_req: NextRequest, context: Context) {
   try {
     const { id } = await context.params;
 
@@ -20,22 +19,22 @@ export async function GET(req: NextRequest, context: Context) {
     const client = await clientPromise;
     const db = client.db();
 
-    const product = await db.collection("products").findOne({
-      _id: new ObjectId(id),
-    });
+    const product = await db
+      .collection("products")
+      .findOne({ _id: new ObjectId(id) });
 
     if (!product) {
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
 
     return NextResponse.json(product);
-  } catch {
+  } catch (err) {
+    console.error(err);
     return NextResponse.json({ error: "Server error" }, { status: 500 });
   }
 }
 
-// 🗑 DELETE product
-export async function DELETE(req: NextRequest, context: Context) {
+export async function DELETE(_req: NextRequest, context: Context) {
   try {
     const session = await getServerSession(authOptions);
 
@@ -52,9 +51,9 @@ export async function DELETE(req: NextRequest, context: Context) {
     const client = await clientPromise;
     const db = client.db();
 
-    const product = await db.collection("products").findOne({
-      _id: new ObjectId(id),
-    });
+    const product = await db
+      .collection("products")
+      .findOne({ _id: new ObjectId(id) });
 
     if (!product) {
       return NextResponse.json({ error: "Product not found" }, { status: 404 });
@@ -64,12 +63,11 @@ export async function DELETE(req: NextRequest, context: Context) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    await db.collection("products").deleteOne({
-      _id: new ObjectId(id),
-    });
+    await db.collection("products").deleteOne({ _id: new ObjectId(id) });
 
     return NextResponse.json({ success: true });
-  } catch {
+  } catch (err) {
+    console.error(err);
     return NextResponse.json({ error: "Server error" }, { status: 500 });
   }
 }

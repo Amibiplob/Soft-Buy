@@ -12,8 +12,15 @@ export interface CartItem {
   id: string;
   name: string;
   price: number;
-  image?: string;
+  image?: string; // optional
   quantity: number;
+  title?: string; // optional
+  details?: string; // optional
+  rating?: number; // optional
+  category?: string; // optional
+  added_on?: string; // optional
+  key_features?: string[]; // optional
+  userId?: string; // optional
 }
 
 type CartAction =

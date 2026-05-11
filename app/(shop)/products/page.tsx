@@ -1,7 +1,8 @@
 import { getProducts } from "@/lib/data/products";
 import ProductsClient from "@/components/ProductsClient";
+import type { Metadata } from "next";
 
-export const metadata = {
+export const metadata: Metadata = {
   title: "All Products | SoftBuy",
   description: "Browse our full catalog of quality products.",
 };
