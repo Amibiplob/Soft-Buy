@@ -50,10 +50,11 @@ export default function RegisterPage() {
 
     if (!res.ok) {
       setError(data.error ?? "Registration failed.");
+      toast.error(data.error);
       return;
     }
-    toast.success("Acount created succesfully");
-    router.push("/");
+    toast.success("Acount created succesfully.");
+    router.push("/login");
   };
 
   const handleGoogleSignIn = async () => {
