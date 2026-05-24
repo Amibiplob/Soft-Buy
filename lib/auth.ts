@@ -1,6 +1,6 @@
 import { AuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
-import bcrypt from "bcrypt";
+import bcrypt from "bcryptjs";
 import clientPromise from "@/lib/db";
 
 export const authOptions: AuthOptions = {
@@ -11,11 +11,15 @@ export const authOptions: AuthOptions = {
         email: { label: "Email", type: "text" },
         password: { label: "Password", type: "password" },
       },
+
       async authorize(credentials) {
-        if (!credentials?.email || !credentials?.password) return null;
+        if (!credentials?.email || !credentials?.password) {
+          return null;
+        }
 
         const client = await clientPromise;
         const db = client.db();
+
         const user = await db.collection("users").findOne({
           email: credentials.email.toLowerCase(),
         });
@@ -26,6 +30,7 @@ export const authOptions: AuthOptions = {
           credentials.password,
           user.password,
         );
+
         if (!isValid) return null;
 
         return {
@@ -37,27 +42,34 @@ export const authOptions: AuthOptions = {
       },
     }),
   ],
+
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id;
         token.role = user.role;
       }
+
       return token;
     },
+
     async session({ session, token }) {
       if (token && session.user) {
         session.user.id = token.id as string;
         session.user.role = token.role as string;
       }
+
       return session;
     },
   },
+
   pages: {
-    signIn: "/login", // change this to match your actual login page route
+    signIn: "/login",
   },
+
   session: {
     strategy: "jwt",
   },
+
   secret: process.env.NEXTAUTH_SECRET,
 };
