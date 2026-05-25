@@ -1,7 +1,7 @@
 "use client";
 
 import { useSearchParams, useRouter } from "next/navigation";
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
@@ -10,6 +10,14 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 
 export default function ResetPasswordPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <ResetPasswordClient />
+    </Suspense>
+  );
+}
+
+function ResetPasswordClient() {
   const searchParams = useSearchParams();
   const router = useRouter();
 
@@ -62,13 +70,11 @@ export default function ResetPasswordPage() {
 
   return (
     <div className="relative flex py-24 items-center justify-center bg-gradient-to-br from-green-100 via-emerald-300 to-green-100 px-4">
-      {/* Background Blur Effects */}
       <div className="absolute w-96 h-96 bg-emerald-400/20 blur-3xl rounded-full top-10 left-10" />
       <div className="absolute w-72 h-72 bg-green-200/20 blur-2xl rounded-full bottom-10 right-10" />
 
       <Card className="relative w-full max-w-md shadow-2xl border-white/10 bg-white/95 backdrop-blur">
         <CardContent className="pt-6">
-          {/* Heading */}
           <div className="text-center mb-6">
             <h1 className="text-3xl font-bold text-green-800">
               Reset Password
@@ -79,7 +85,6 @@ export default function ResetPasswordPage() {
             </p>
           </div>
 
-          {/* Form */}
           <form onSubmit={handleResetPassword} className="space-y-4">
             <div className="space-y-2">
               <Label>New Password</Label>
@@ -107,7 +112,6 @@ export default function ResetPasswordPage() {
               />
             </div>
 
-            {/* Message */}
             {message && (
               <p
                 className={`text-center text-sm ${
@@ -120,7 +124,6 @@ export default function ResetPasswordPage() {
               </p>
             )}
 
-            {/* Button */}
             <Button
               type="submit"
               className="w-full bg-green-700 hover:bg-green-800"
@@ -130,7 +133,6 @@ export default function ResetPasswordPage() {
             </Button>
           </form>
 
-          {/* Back */}
           <div className="mt-4 text-center">
             <Link
               href="/login"
