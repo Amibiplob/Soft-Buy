@@ -7,18 +7,9 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import Link from "next/link";
-
-type Product = {
-  _id?: string;
-  title: string;
-  image: string;
-  details: string;
-  price: number;
-  rating: number;
-  category: string;
-  added_on: string;
-  key_features: string[];
-};
+import { useCart } from "@/context/CartContext";
+import { ShoppingCart, Check } from "lucide-react";
+import { Product } from "@/types/product";
 
 export default function ProductPage() {
   const params = useParams();
@@ -26,6 +17,10 @@ export default function ProductPage() {
 
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
+
+  const { addItem, items } = useCart();
+
+  const isProductInCart = items.some((item) => item.id === product?._id);
 
   useEffect(() => {
     const fetchProduct = async () => {
@@ -70,7 +65,9 @@ export default function ProductPage() {
         <div className="space-y-6">
           <h1 className="text-3xl font-semibold">{product.title}</h1>
 
-          <p className="text-2xl font-bold text-green-600">${product.price}</p>
+          <p className="text-2xl font-bold text-green-600">
+            ${product.price.toFixed(2)}
+          </p>
 
           <p className="text-sm text-muted-foreground">
             Category: {product.category}
@@ -95,8 +92,31 @@ export default function ProductPage() {
 
           <p className="text-yellow-500 font-semibold">⭐ {product.rating}</p>
 
-          <Button className="w-full bg-green-600 hover:bg-green-700">
-            Add to Cart
+          {/* Interactive Button reflecting context state */}
+          <Button
+            className="w-full text-base py-6 transition-all"
+            variant={isProductInCart ? "secondary" : "default"}
+            style={{
+              backgroundColor: !isProductInCart ? "#16a34a" : undefined,
+            }} // maintaining green identity on active action
+            onClick={() =>
+              addItem({
+                id: product._id,
+                name: product.title,
+                price: product.price,
+                image: product.image ?? "",
+              })
+            }
+          >
+            {isProductInCart ? (
+              <>
+                <Check className="mr-2 h-5 w-5" /> Already in Cart
+              </>
+            ) : (
+              <>
+                <ShoppingCart className="mr-2 h-5 w-5" /> Add to Cart
+              </>
+            )}
           </Button>
         </div>
       </div>
