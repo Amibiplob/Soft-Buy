@@ -16,32 +16,14 @@ import {
 } from "@/components/ui/select";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { cn } from "@/lib/utils";
+import { useSession } from "next-auth/react";
+import { useCart } from "@/context/CartContext";
+import Image from "next/image";
+import { toast } from "sonner";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 type PaymentMethod = "card" | "paypal" | "cod";
-
-interface OrderItem {
-  id: string;
-  name: string;
-  qty: number;
-  price: number;
-  image: string; // emoji placeholder
-}
-
-// ─── Constants ────────────────────────────────────────────────────────────────
-
-const ORDER_ITEMS: OrderItem[] = [
-  { id: "1", name: "Wireless Headphones", qty: 1, price: 58.99, image: "🎧" },
-  { id: "2", name: "Smart Watch", qty: 1, price: 89.99, image: "⌚" },
-  { id: "3", name: "Running Shoes", qty: 2, price: 121.98, image: "👟" },
-  { id: "4", name: "Travel Backpack", qty: 1, price: 39.99, image: "🎒" },
-];
-
-const SUBTOTAL = ORDER_ITEMS.reduce((sum, i) => sum + i.price, 0); // 310.95
-const SHIPPING = 0;
-const TAX = 28.08;
-const TOTAL = SUBTOTAL + SHIPPING + TAX;
 
 // ─── Card Brand Icons (inline SVG stubs) ──────────────────────────────────────
 
@@ -169,6 +151,20 @@ function FormField({
 export default function CheckoutPage() {
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("card");
 
+  const { data: session } = useSession();
+  const { items } = useCart();
+
+  const SHIPPING = 0;
+
+  const SUBTOTAL = items.reduce(
+    (sum, item) => sum + item.price * item.quantity,
+    0,
+  );
+
+  const TAX = SUBTOTAL * 0.09;
+
+  const TOTAL = SUBTOTAL + SHIPPING + TAX;
+
   return (
     <div className="min-h-screen bg-muted/30 px-4 py-8 md:px-8 lg:px-16">
       {/* Breadcrumb */}
@@ -192,8 +188,8 @@ export default function CheckoutPage() {
             <FormField label="Full Name" id="fullName">
               <Input
                 id="fullName"
-                placeholder="John Doe"
-                defaultValue="John Doe"
+                placeholder="Full Name"
+                defaultValue={session?.user?.name ?? ""}
               />
             </FormField>
 
@@ -201,8 +197,8 @@ export default function CheckoutPage() {
               <Input
                 id="email"
                 type="email"
-                placeholder="john.doe@email.com"
-                defaultValue="john.doe@email.com"
+                placeholder="Email"
+                defaultValue={session?.user?.email ?? ""}
               />
             </FormField>
 
@@ -409,25 +405,31 @@ export default function CheckoutPage() {
 
           {/* Item list */}
           <div className="flex flex-col gap-3">
-            {ORDER_ITEMS.map((item) => (
+            {items.map((item) => (
               <div
                 key={item.id}
                 className="flex items-center justify-between gap-3"
               >
                 <div className="flex items-center gap-3">
-                  {/* Image placeholder */}
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-muted text-xl">
-                    {item.image}
-                  </div>
+                  <img
+                    src={item.image}
+                    alt={item.name}
+                    className="h-10 w-10 rounded-lg object-cover border"
+                  />
+
                   <div className="text-sm">
                     <p className="font-medium text-foreground leading-tight">
                       {item.name}
                     </p>
-                    <p className="text-xs text-muted-foreground">x{item.qty}</p>
+
+                    <p className="text-xs text-muted-foreground">
+                      x{item.quantity}
+                    </p>
                   </div>
                 </div>
+
                 <span className="text-sm font-medium shrink-0">
-                  ${item.price.toFixed(2)}
+                  ${(item.price * item.quantity).toFixed(2)}
                 </span>
               </div>
             ))}
@@ -436,13 +438,16 @@ export default function CheckoutPage() {
           <Separator className="my-5" />
 
           {/* CTA */}
-          <Button
-            size="lg"
-            className="w-full bg-green-600 hover:bg-green-700 text-white font-semibold gap-2"
-          >
-            <Lock className="h-4 w-4" />
-            Place Order
-          </Button>
+          <Link href="/" onClick={() => toast.success("Thanks for order")}>
+            <Button
+              size="lg"
+              disabled={items.length === 0}
+              className="w-full bg-green-600 hover:bg-green-700 text-white font-semibold gap-2"
+            >
+              <Lock className="h-4 w-4" />
+              Place Order
+            </Button>
+          </Link>
 
           <div className="mt-3 flex items-center justify-center gap-1.5 text-xs text-muted-foreground">
             <ShieldCheck className="h-3.5 w-3.5" />

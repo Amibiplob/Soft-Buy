@@ -248,13 +248,14 @@ export default function CartPage() {
                   {fmt(total)}
                 </span>
               </div>
-
-              <Button
-                className="w-full h-11 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm shadow-md shadow-emerald-600/20 transition-all hover:shadow-lg hover:shadow-emerald-600/25 hover:-translate-y-px active:translate-y-0"
-                disabled={items.length === 0}
-              >
-                Proceed to Checkout
-              </Button>
+              <Link href="/checkout">
+                <Button
+                  className="w-full h-11 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm shadow-md shadow-emerald-600/20 transition-all hover:shadow-lg hover:shadow-emerald-600/25 hover:-translate-y-px active:translate-y-0"
+                  disabled={items.length === 0}
+                >
+                  Proceed to Checkout
+                </Button>
+              </Link>
             </div>
 
             {/* Trust badges */}
