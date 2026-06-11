@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { signOut, useSession } from "next-auth/react";
-import { ShoppingCart, LogOut, ArrowUpRight, Search, Bell } from "lucide-react";
+import { ShoppingCart, LogOut, ArrowUpRight, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -43,7 +43,6 @@ export default function NavAuthSection() {
   return (
     <div className="flex items-center gap-2">
       <Search className="w-5 h-5 cursor-pointer hover:text-primary transition" />
-      <Bell className="w-5 h-5 cursor-pointer hover:text-primary transition" />
 
       <Link href="/cart">
         <Button variant="ghost" size="icon" className="relative">

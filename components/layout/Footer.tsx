@@ -1,9 +1,12 @@
+"use client";
+
 import Link from "next/link";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import Image from "next/image";
 
 export default function Footer() {
+  const currentYear = new Date().getFullYear();
   return (
     <footer className="border-t bg-muted/40">
       <div className="container mx-auto px-4 py-12 grid gap-8 md:grid-cols-2 lg:grid-cols-5">
@@ -95,7 +98,7 @@ export default function Footer() {
 
       {/* Bottom */}
       <div className="border-t py-6 text-center text-sm text-muted-foreground">
-        © {new Date().getFullYear()} SoftBuy. All rights reserved.
+       © {currentYear} SoftBuy. All rights reserved.
       </div>
     </footer>
   );
