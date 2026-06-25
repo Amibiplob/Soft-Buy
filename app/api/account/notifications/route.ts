@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import clientPromise from "@/lib/mongodb";
+import clientPromise from "@/lib/db";
+
 
 const ALLOWED_KEYS = [
   "orderUpdates",
