@@ -1,11 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ChevronRight, Lock, ShieldCheck } from "lucide-react";
+import { ChevronRight, Lock, ShieldCheck, Loader2, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import {
   Select,
@@ -18,12 +20,39 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { cn } from "@/lib/utils";
 import { useSession } from "next-auth/react";
 import { useCart } from "@/context/CartContext";
-import Image from "next/image";
 import { toast } from "sonner";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 type PaymentMethod = "card" | "paypal" | "cod";
+
+interface ShippingForm {
+  fullName: string;
+  email: string;
+  phone: string;
+  address: string;
+  address2: string;
+  city: string;
+  state: string;
+  country: string;
+}
+
+interface CardForm {
+  cardNumber: string;
+  cardName: string;
+  expiry: string;
+  cvc: string;
+}
+
+interface SavedCard {
+  _id: string;
+  brand: string; // "visa" | "mastercard" | "amex" | ...
+  last4: string;
+  expiryMonth: number;
+  expiryYear: number;
+  cardholderName: string;
+  isDefault: boolean;
+}
 
 // ─── Card Brand Icons (inline SVG stubs) ──────────────────────────────────────
 
@@ -101,6 +130,19 @@ function PayPalLogo() {
   );
 }
 
+function BrandIcon({ brand }: { brand: string }) {
+  switch (brand?.toLowerCase()) {
+    case "visa":
+      return <VisaIcon />;
+    case "mastercard":
+      return <MastercardIcon />;
+    case "amex":
+      return <AmexIcon />;
+    default:
+      return <VisaIcon />;
+  }
+}
+
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
 function SectionCard({
@@ -149,21 +191,151 @@ function FormField({
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
 export default function CheckoutPage() {
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("card");
-
+  const router = useRouter();
   const { data: session } = useSession();
-  const { items } = useCart();
+  const { items, removeItem } = useCart();
 
-  const SHIPPING = 0;
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("card");
+  const [isPlacingOrder, setIsPlacingOrder] = useState(false);
 
+  // Saved default card
+  const [savedCard, setSavedCard] = useState<SavedCard | null>(null);
+  const [loadingCard, setLoadingCard] = useState(true);
+  const [useSavedCard, setUseSavedCard] = useState(true);
+
+  const [shipping, setShipping] = useState<ShippingForm>({
+    fullName: session?.user?.name ?? "",
+    email: session?.user?.email ?? "",
+    phone: "",
+    address: "",
+    address2: "",
+    city: "",
+    state: "",
+    country: "us",
+  });
+
+  const [card, setCard] = useState<CardForm>({
+    cardNumber: "",
+    cardName: "",
+    expiry: "",
+    cvc: "",
+  });
+
+  useEffect(() => {
+    async function fetchDefaultCard() {
+      try {
+        const res = await fetch("/api/payment-methods");
+        if (!res.ok) return;
+        const data = await res.json();
+        const cards: SavedCard[] = data.paymentMethods ?? [];
+        const defaultCard = cards.find((c) => c.isDefault) ?? cards[0] ?? null;
+        setSavedCard(defaultCard);
+        setUseSavedCard(!!defaultCard);
+      } catch {
+        // No saved card available — falls back to manual entry below.
+      } finally {
+        setLoadingCard(false);
+      }
+    }
+    fetchDefaultCard();
+  }, []);
+
+  const updateShipping = (field: keyof ShippingForm, value: string) =>
+    setShipping((prev) => ({ ...prev, [field]: value }));
+
+  const updateCard = (field: keyof CardForm, value: string) =>
+    setCard((prev) => ({ ...prev, [field]: value }));
+
+  const SHIPPING_COST = 0;
   const SUBTOTAL = items.reduce(
     (sum, item) => sum + item.price * item.quantity,
     0,
   );
-
   const TAX = SUBTOTAL * 0.09;
+  const TOTAL = SUBTOTAL + SHIPPING_COST + TAX;
 
-  const TOTAL = SUBTOTAL + SHIPPING + TAX;
+  async function handlePlaceOrder() {
+    if (items.length === 0) {
+      toast.error("Your cart is empty");
+      return;
+    }
+
+    if (
+      !shipping.fullName ||
+      !shipping.email ||
+      !shipping.address ||
+      !shipping.city
+    ) {
+      toast.error("Please fill in your shipping details");
+      return;
+    }
+
+    const usingNewCard =
+      paymentMethod === "card" && !(useSavedCard && savedCard);
+
+    if (usingNewCard) {
+      const digitsOnly = card.cardNumber.replace(/\s/g, "");
+      if (
+        digitsOnly.length < 12 ||
+        !card.cardName ||
+        !card.expiry ||
+        !card.cvc
+      ) {
+        toast.error("Please complete your card details");
+        return;
+      }
+    }
+
+    setIsPlacingOrder(true);
+
+    try {
+      const digitsOnly = card.cardNumber.replace(/\s/g, "");
+
+      const res = await fetch("/api/orders", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          items: items.map((item) => ({
+            productId: item.id,
+            name: item.name,
+            image: item.image,
+            price: item.price,
+            quantity: item.quantity,
+          })),
+          shippingAddress: shipping,
+          paymentMethod,
+          // Card data never leaves the browser beyond a reference —
+          // either the saved card's id, or just the last 4 of a new card.
+          ...(paymentMethod === "card" && useSavedCard && savedCard
+            ? { paymentMethodId: savedCard._id, cardLast4: savedCard.last4 }
+            : paymentMethod === "card"
+              ? { cardLast4: digitsOnly.slice(-4) }
+              : {}),
+          subtotal: SUBTOTAL,
+          shippingCost: SHIPPING_COST,
+          tax: TAX,
+          totalAmount: TOTAL,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to place order");
+      }
+
+      // Remove only the ordered products from the cart, not the whole cart —
+      // in case items were added after this order was placed in another tab.
+      items.forEach((item) => removeItem(item.id));
+
+      toast.success(`Order #${data.orderId} placed successfully`);
+      router.push(`/dashboard/orders/${data.orderId}`);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Something went wrong");
+    } finally {
+      setIsPlacingOrder(false);
+    }
+  }
 
   return (
     <div className="min-h-screen bg-muted/30 px-4 py-8 md:px-8 lg:px-16">
@@ -189,7 +361,8 @@ export default function CheckoutPage() {
               <Input
                 id="fullName"
                 placeholder="Full Name"
-                defaultValue={session?.user?.name ?? ""}
+                value={shipping.fullName}
+                onChange={(e) => updateShipping("fullName", e.target.value)}
               />
             </FormField>
 
@@ -198,7 +371,8 @@ export default function CheckoutPage() {
                 id="email"
                 type="email"
                 placeholder="Email"
-                defaultValue={session?.user?.email ?? ""}
+                value={shipping.email}
+                onChange={(e) => updateShipping("email", e.target.value)}
               />
             </FormField>
 
@@ -207,7 +381,8 @@ export default function CheckoutPage() {
                 id="phone"
                 type="tel"
                 placeholder="+1 123 456 7890"
-                defaultValue="+1 123 456 7890"
+                value={shipping.phone}
+                onChange={(e) => updateShipping("phone", e.target.value)}
               />
             </FormField>
 
@@ -215,12 +390,15 @@ export default function CheckoutPage() {
               <Input
                 id="address"
                 placeholder="123 Green Street"
-                defaultValue="123 Green Street"
+                value={shipping.address}
+                onChange={(e) => updateShipping("address", e.target.value)}
               />
               <Input
                 id="address2"
                 placeholder="Apartment, suite, etc. (optional)"
                 className="mt-2"
+                value={shipping.address2}
+                onChange={(e) => updateShipping("address2", e.target.value)}
               />
             </FormField>
 
@@ -229,16 +407,25 @@ export default function CheckoutPage() {
                 <Input
                   id="city"
                   placeholder="New York"
-                  defaultValue="New York"
+                  value={shipping.city}
+                  onChange={(e) => updateShipping("city", e.target.value)}
                 />
               </FormField>
               <FormField label="State" id="state">
-                <Input id="state" placeholder="NY" defaultValue="NY" />
+                <Input
+                  id="state"
+                  placeholder="NY"
+                  value={shipping.state}
+                  onChange={(e) => updateShipping("state", e.target.value)}
+                />
               </FormField>
             </div>
 
             <FormField label="Country" id="country">
-              <Select defaultValue="us">
+              <Select
+                value={shipping.country}
+                onValueChange={(v) => updateShipping("country", v)}
+              >
                 <SelectTrigger id="country">
                   <SelectValue placeholder="Select country" />
                 </SelectTrigger>
@@ -285,44 +472,108 @@ export default function CheckoutPage() {
                 </div>
               </div>
 
-              {/* Card Fields — visible when selected */}
               {paymentMethod === "card" && (
-                <div className="mt-4 flex flex-col gap-3">
-                  <FormField label="Card Number" id="cardNumber">
-                    <Input
-                      id="cardNumber"
-                      placeholder="4243 4302 4242 4242"
-                      defaultValue="4243 4302 4242 4242"
-                      maxLength={19}
-                    />
-                  </FormField>
+                <div
+                  className="mt-4 flex flex-col gap-3"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  {loadingCard ? (
+                    <div className="h-16 animate-pulse rounded-lg bg-muted" />
+                  ) : useSavedCard && savedCard ? (
+                    /* ── Saved default card ── */
+                    <div className="flex items-center justify-between rounded-lg border border-border bg-muted/40 p-3">
+                      <div className="flex items-center gap-3">
+                        <BrandIcon brand={savedCard.brand} />
+                        <div>
+                          <p className="flex items-center gap-2 text-sm font-medium">
+                            •••• •••• •••• {savedCard.last4}
+                            {savedCard.isDefault && (
+                              <Badge
+                                variant="secondary"
+                                className="text-[10px]"
+                              >
+                                Default
+                              </Badge>
+                            )}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {savedCard.cardholderName} · Expires{" "}
+                            {String(savedCard.expiryMonth).padStart(2, "0")}/
+                            {String(savedCard.expiryYear).slice(-2)}
+                          </p>
+                        </div>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="gap-1.5 text-xs"
+                        onClick={() => setUseSavedCard(false)}
+                      >
+                        <Pencil className="h-3 w-3" />
+                        Use a different card
+                      </Button>
+                    </div>
+                  ) : (
+                    /* ── Manual card entry ── */
+                    <>
+                      {savedCard && (
+                        <button
+                          type="button"
+                          onClick={() => setUseSavedCard(true)}
+                          className="self-start text-xs font-medium text-green-700 hover:underline"
+                        >
+                          Use saved card ending in {savedCard.last4}
+                        </button>
+                      )}
 
-                  <FormField label="Name on Card" id="cardName">
-                    <Input
-                      id="cardName"
-                      placeholder="John Doe"
-                      defaultValue="John Doe"
-                    />
-                  </FormField>
+                      <FormField label="Card Number" id="cardNumber">
+                        <Input
+                          id="cardNumber"
+                          placeholder="4243 4302 4242 4242"
+                          value={card.cardNumber}
+                          onChange={(e) =>
+                            updateCard("cardNumber", e.target.value)
+                          }
+                          maxLength={19}
+                        />
+                      </FormField>
 
-                  <div className="grid grid-cols-2 gap-3">
-                    <FormField label="Expiry Date" id="expiry">
-                      <Input
-                        id="expiry"
-                        placeholder="MM / YY"
-                        defaultValue="12 / 26"
-                        maxLength={7}
-                      />
-                    </FormField>
-                    <FormField label="CVC" id="cvc">
-                      <Input
-                        id="cvc"
-                        placeholder="123"
-                        defaultValue="123"
-                        maxLength={4}
-                      />
-                    </FormField>
-                  </div>
+                      <FormField label="Name on Card" id="cardName">
+                        <Input
+                          id="cardName"
+                          placeholder="John Doe"
+                          value={card.cardName}
+                          onChange={(e) =>
+                            updateCard("cardName", e.target.value)
+                          }
+                        />
+                      </FormField>
+
+                      <div className="grid grid-cols-2 gap-3">
+                        <FormField label="Expiry Date" id="expiry">
+                          <Input
+                            id="expiry"
+                            placeholder="MM / YY"
+                            value={card.expiry}
+                            onChange={(e) =>
+                              updateCard("expiry", e.target.value)
+                            }
+                            maxLength={7}
+                          />
+                        </FormField>
+                        <FormField label="CVC" id="cvc">
+                          <Input
+                            id="cvc"
+                            placeholder="123"
+                            value={card.cvc}
+                            onChange={(e) => updateCard("cvc", e.target.value)}
+                            maxLength={4}
+                          />
+                        </FormField>
+                      </div>
+                    </>
+                  )}
                 </div>
               )}
             </div>
@@ -373,7 +624,6 @@ export default function CheckoutPage() {
 
         {/* ── Column 3: Order Summary ── */}
         <SectionCard title="Order Summary">
-          {/* Price breakdown */}
           <div className="flex flex-col gap-3 text-sm">
             <div className="flex justify-between">
               <span className="text-muted-foreground">Subtotal</span>
@@ -382,7 +632,7 @@ export default function CheckoutPage() {
             <div className="flex justify-between">
               <span className="text-muted-foreground">Shipping</span>
               <div className="text-right">
-                <div className="font-medium">${SHIPPING.toFixed(2)}</div>
+                <div className="font-medium">${SHIPPING_COST.toFixed(2)}</div>
                 <div className="text-xs text-green-600 font-medium">
                   Free shipping
                 </div>
@@ -403,7 +653,6 @@ export default function CheckoutPage() {
 
           <Separator className="my-5" />
 
-          {/* Item list */}
           <div className="flex flex-col gap-3">
             {items.map((item) => (
               <div
@@ -416,18 +665,15 @@ export default function CheckoutPage() {
                     alt={item.name}
                     className="h-10 w-10 rounded-lg object-cover border"
                   />
-
                   <div className="text-sm">
                     <p className="font-medium text-foreground leading-tight">
                       {item.name}
                     </p>
-
                     <p className="text-xs text-muted-foreground">
                       x{item.quantity}
                     </p>
                   </div>
                 </div>
-
                 <span className="text-sm font-medium shrink-0">
                   ${(item.price * item.quantity).toFixed(2)}
                 </span>
@@ -437,17 +683,24 @@ export default function CheckoutPage() {
 
           <Separator className="my-5" />
 
-          {/* CTA */}
-          <Link href="/" onClick={() => toast.success("Thanks for order")}>
-            <Button
-              size="lg"
-              disabled={items.length === 0}
-              className="w-full bg-green-600 hover:bg-green-700 text-white font-semibold gap-2"
-            >
-              <Lock className="h-4 w-4" />
-              Place Order
-            </Button>
-          </Link>
+          <Button
+            size="lg"
+            disabled={items.length === 0 || isPlacingOrder}
+            onClick={handlePlaceOrder}
+            className="w-full bg-green-600 hover:bg-green-700 text-white font-semibold gap-2"
+          >
+            {isPlacingOrder ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Placing Order...
+              </>
+            ) : (
+              <>
+                <Lock className="h-4 w-4" />
+                Place Order
+              </>
+            )}
+          </Button>
 
           <div className="mt-3 flex items-center justify-center gap-1.5 text-xs text-muted-foreground">
             <ShieldCheck className="h-3.5 w-3.5" />
