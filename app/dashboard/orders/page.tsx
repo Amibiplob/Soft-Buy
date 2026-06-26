@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -24,76 +24,6 @@ interface Order {
   images: string[];
 }
 
-const orders: Order[] = [
-  {
-    id: "SB10012",
-    date: "May 15, 2025",
-    items: 3,
-    total: "$340.03",
-    status: "Delivered",
-    images: [
-      "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=40&h=40&fit=crop",
-      "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=40&h=40&fit=crop",
-      "https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=40&h=40&fit=crop",
-    ],
-  },
-  {
-    id: "SB10011",
-    date: "May 10, 2025",
-    items: 2,
-    total: "$180.50",
-    status: "Shipped",
-    images: [
-      "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=40&h=40&fit=crop",
-      "https://images.unsplash.com/photo-1585386959984-a4155224a1ad?w=40&h=40&fit=crop",
-    ],
-  },
-  {
-    id: "SB10010",
-    date: "May 05, 2025",
-    items: 1,
-    total: "$89.99",
-    status: "Delivered",
-    images: [
-      "https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=40&h=40&fit=crop",
-    ],
-  },
-  {
-    id: "SB10009",
-    date: "Apr 28, 2025",
-    items: 4,
-    total: "$560.45",
-    status: "Delivered",
-    images: [
-      "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=40&h=40&fit=crop",
-      "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=40&h=40&fit=crop",
-      "https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=40&h=40&fit=crop",
-      "https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=40&h=40&fit=crop",
-    ],
-  },
-  {
-    id: "SB10008",
-    date: "Apr 20, 2025",
-    items: 1,
-    total: "$29.99",
-    status: "Pending",
-    images: [
-      "https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=40&h=40&fit=crop",
-    ],
-  },
-  {
-    id: "SB10007",
-    date: "Apr 12, 2025",
-    items: 2,
-    total: "$150.00",
-    status: "Cancelled",
-    images: [
-      "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=40&h=40&fit=crop",
-      "https://images.unsplash.com/photo-1585386959984-a4155224a1ad?w=40&h=40&fit=crop",
-    ],
-  },
-];
-
 const statusStyles: Record<string, string> = {
   Delivered: "bg-green-100 text-green-700 border-green-200",
   Shipped: "bg-blue-100 text-blue-700 border-blue-200",
@@ -103,6 +33,35 @@ const statusStyles: Record<string, string> = {
 
 export default function OrdersPage() {
   const [activeTab, setActiveTab] = useState<Tab>("All Orders");
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let ignore = false;
+
+    async function fetchOrders() {
+      try {
+        setLoading(true);
+        setError(null);
+        const res = await fetch("/api/orders");
+        if (!res.ok) throw new Error("Failed to load orders");
+        const data = await res.json();
+        if (!ignore) setOrders(data.orders);
+      } catch (err) {
+        if (!ignore) {
+          setError(err instanceof Error ? err.message : "Something went wrong");
+        }
+      } finally {
+        if (!ignore) setLoading(false);
+      }
+    }
+
+    fetchOrders();
+    return () => {
+      ignore = true;
+    };
+  }, []);
 
   const filtered =
     activeTab === "All Orders"
@@ -132,7 +91,41 @@ export default function OrdersPage() {
 
       {/* Orders List */}
       <div className="space-y-3">
-        {filtered.length === 0 ? (
+        {loading ? (
+          Array.from({ length: 3 }).map((_, i) => (
+            <div
+              key={i}
+              className="bg-white rounded-xl border border-gray-200 shadow-sm p-5 animate-pulse"
+            >
+              <div className="flex items-center justify-between gap-4">
+                <div className="space-y-2 min-w-[110px]">
+                  <div className="h-3 w-20 bg-gray-200 rounded" />
+                  <div className="h-2 w-16 bg-gray-100 rounded" />
+                </div>
+                <div className="flex -space-x-2 flex-1">
+                  {Array.from({ length: 3 }).map((_, j) => (
+                    <div
+                      key={j}
+                      className="w-10 h-10 rounded-lg border-2 border-white bg-gray-200"
+                    />
+                  ))}
+                </div>
+                <div className="h-8 w-20 bg-gray-200 rounded" />
+              </div>
+            </div>
+          ))
+        ) : error ? (
+          <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-12 text-center">
+            <p className="text-gray-500 font-medium">{error}</p>
+            <Button
+              onClick={() => window.location.reload()}
+              size="sm"
+              className="mt-3 bg-green-600 hover:bg-green-700 text-white"
+            >
+              Retry
+            </Button>
+          </div>
+        ) : filtered.length === 0 ? (
           <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-12 text-center text-gray-400">
             <p className="text-lg font-medium">
               No {activeTab.toLowerCase()} orders
