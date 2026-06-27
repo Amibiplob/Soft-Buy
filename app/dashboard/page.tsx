@@ -10,6 +10,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useSession } from "next-auth/react";
 
 const statCards = [
   {
@@ -85,6 +86,8 @@ const statusStyles: Record<string, string> = {
 };
 
 export default function DashboardOverviewPage() {
+  const { data: session } = useSession();
+
   return (
     <div className="space-y-6">
       {/* Welcome Banner */}
@@ -92,7 +95,7 @@ export default function DashboardOverviewPage() {
         <div className="flex items-start justify-between">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">
-              Welcome back, John! 👋
+              Welcome back, {session?.user.name}
             </h1>
             <p className="text-gray-500 text-sm mt-1">
               Here's what's happening with your account today.
