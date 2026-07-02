@@ -11,6 +11,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useSession } from "next-auth/react";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 
 const statCards = [
   {
@@ -85,8 +87,8 @@ const statusStyles: Record<string, string> = {
   Cancelled: "bg-red-100 text-red-700 border-red-200",
 };
 
-export default function DashboardOverviewPage() {
-  const { data: session } = useSession();
+export default async function DashboardOverviewPage() {
+  const session = await getServerSession(authOptions);
 
   return (
     <div className="space-y-6">
