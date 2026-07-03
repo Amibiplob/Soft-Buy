@@ -20,7 +20,6 @@ import { signOut } from "next-auth/react";
 const navItems = [
   { label: "Overview", href: "/dashboard", icon: LayoutDashboard },
   { label: "Orders", href: "/dashboard/orders", icon: ShoppingBag },
-  { label: "Wishlist", href: "/dashboard/wishlist", icon: Heart },
   { label: "Addresses", href: "/dashboard/addresses", icon: MapPin },
   {
     label: "Payment Methods",
@@ -28,7 +27,6 @@ const navItems = [
     icon: CreditCard,
   },
   { label: "Account Settings", href: "/dashboard/account", icon: Settings },
-  { label: "Reviews", href: "/dashboard/reviews", icon: Star },
 ];
 
 export default function DashboardLayout({
