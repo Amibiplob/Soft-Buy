@@ -7,6 +7,7 @@ import Navbar from "@/components/layout/Navbar";
 import SessionProviderWrapper from "@/components/SessionProviderWrapper";
 import { Toaster } from "@/components/ui/sonner";
 import { CartProvider } from "@/context/CartContext";
+import { WishlistProvider } from "@/context/WishlistContext";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -35,12 +36,14 @@ export default function RootLayout({
     >
       <body className="min-h-screen flex flex-col bg-green-50">
         <SessionProviderWrapper>
-          <CartProvider>
-            <Navbar />
-            {children}
-            <Toaster />
-            <Footer />
-          </CartProvider>
+          <WishlistProvider>
+            <CartProvider>
+              <Navbar />
+              {children}
+              <Toaster />
+              <Footer />
+            </CartProvider>
+          </WishlistProvider>
         </SessionProviderWrapper>
       </body>
     </html>

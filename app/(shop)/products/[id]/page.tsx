@@ -2,25 +2,30 @@
 
 import Image from "next/image";
 import { useEffect, useState } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import Link from "next/link";
 import { useCart } from "@/context/CartContext";
-import { ShoppingCart, Check } from "lucide-react";
+import { useWishlist } from "@/context/WishlistContext";
+import { ShoppingCart, Check, Heart, Zap } from "lucide-react";
 import { Product } from "@/types/product";
 
 export default function ProductPage() {
   const params = useParams();
+  const router = useRouter();
   const id = params.id as string;
 
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
+  const [buying, setBuying] = useState(false);
 
   const { addItem, items } = useCart();
+  const { toggleItem, isInWishlist, loading: wishlistLoading } = useWishlist();
 
   const isProductInCart = items.some((item) => item.id === product?._id);
+  const isWishlisted = product ? isInWishlist(product._id) : false;
 
   useEffect(() => {
     const fetchProduct = async () => {
@@ -40,6 +45,22 @@ export default function ProductPage() {
     fetchProduct();
   }, [id]);
 
+  const handleBuyNow = () => {
+    if (!product) return;
+    setBuying(true);
+
+    if (!isProductInCart) {
+      addItem({
+        id: product._id,
+        name: product.title,
+        price: product.price,
+        image: product.image ?? "",
+      });
+    }
+
+    router.push(`/checkout?buyNow=${product._id}`);
+  };
+
   if (loading) return <p className="p-6">Loading...</p>;
   if (!product) return <p className="p-6">Product not found</p>;
 
@@ -52,7 +73,29 @@ export default function ProductPage() {
 
       {/* Product */}
       <div className="grid md:grid-cols-2 gap-8 items-center">
-        <Card className="shadow-lg rounded-lg">
+        <Card className="relative shadow-lg rounded-lg">
+          <button
+            onClick={() =>
+              toggleItem({
+                id: product._id,
+                name: product.title,
+                price: product.price,
+                image: product.image ?? "",
+              })
+            }
+            disabled={wishlistLoading}
+            aria-label={
+              isWishlisted ? "Remove from wishlist" : "Add to wishlist"
+            }
+            className="absolute top-3 right-3 z-10 rounded-full bg-white/90 p-2 shadow-md transition-transform hover:scale-110 disabled:opacity-50"
+          >
+            <Heart
+              className={`h-5 w-5 transition-colors ${
+                isWishlisted ? "fill-red-500 text-red-500" : "text-gray-500"
+              }`}
+            />
+          </button>
+
           <Image
             src={product.image}
             alt={product.title}
@@ -92,32 +135,43 @@ export default function ProductPage() {
 
           <p className="text-yellow-500 font-semibold">⭐ {product.rating}</p>
 
-          {/* Interactive Button reflecting context state */}
-          <Button
-            className="w-full text-base py-6 transition-all"
-            variant={isProductInCart ? "secondary" : "default"}
-            style={{
-              backgroundColor: !isProductInCart ? "#16a34a" : undefined,
-            }} // maintaining green identity on active action
-            onClick={() =>
-              addItem({
-                id: product._id,
-                name: product.title,
-                price: product.price,
-                image: product.image ?? "",
-              })
-            }
-          >
-            {isProductInCart ? (
-              <>
-                <Check className="mr-2 h-5 w-5" /> Already in Cart
-              </>
-            ) : (
-              <>
-                <ShoppingCart className="mr-2 h-5 w-5" /> Add to Cart
-              </>
-            )}
-          </Button>
+          {/* Action buttons */}
+          <div className="grid grid-cols-2 gap-3">
+            <Button
+              className="text-base py-6 transition-all"
+              variant={isProductInCart ? "secondary" : "default"}
+              style={{
+                backgroundColor: !isProductInCart ? "#16a34a" : undefined,
+              }}
+              onClick={() =>
+                addItem({
+                  id: product._id,
+                  name: product.title,
+                  price: product.price,
+                  image: product.image ?? "",
+                })
+              }
+            >
+              {isProductInCart ? (
+                <>
+                  <Check className="mr-2 h-5 w-5" /> In Cart
+                </>
+              ) : (
+                <>
+                  <ShoppingCart className="mr-2 h-5 w-5" /> Add to Cart
+                </>
+              )}
+            </Button>
+
+            <Button
+              className="text-base py-6 transition-all bg-orange-500 hover:bg-orange-600 text-white"
+              onClick={handleBuyNow}
+              disabled={buying}
+            >
+              <Zap className="mr-2 h-5 w-5" />
+              {buying ? "Redirecting..." : "Buy Now"}
+            </Button>
+          </div>
         </div>
       </div>
     </div>
