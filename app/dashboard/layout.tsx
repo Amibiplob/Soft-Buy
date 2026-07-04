@@ -21,6 +21,7 @@ const navItems = [
   { label: "Overview", href: "/dashboard", icon: LayoutDashboard },
   { label: "Orders", href: "/dashboard/orders", icon: ShoppingBag },
   { label: "Addresses", href: "/dashboard/addresses", icon: MapPin },
+  { label: "Wishlist", href: "/dashboard/wishlist", icon: Heart },
   {
     label: "Payment Methods",
     href: "/dashboard/payment-methods",

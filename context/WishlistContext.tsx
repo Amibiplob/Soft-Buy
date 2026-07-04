@@ -12,14 +12,18 @@ import { useSession } from "next-auth/react";
 export interface WishlistItem {
   id: string;
   name: string;
+  category: string;
   price: number;
   image: string;
+  inStock: boolean;
 }
 
 interface WishlistContextType {
   items: WishlistItem[];
   loading: boolean;
+  fetching: boolean;
   toggleItem: (item: WishlistItem) => Promise<void>;
+  removeItem: (id: string) => Promise<void>;
   isInWishlist: (id: string) => boolean;
   refreshWishlist: () => Promise<void>;
 }
@@ -32,19 +36,24 @@ export function WishlistProvider({ children }: { children: ReactNode }) {
   const { status } = useSession();
   const [items, setItems] = useState<WishlistItem[]>([]);
   const [loading, setLoading] = useState(false);
+  const [fetching, setFetching] = useState(true);
 
   const refreshWishlist = async () => {
     if (status !== "authenticated") {
       setItems([]);
+      setFetching(false);
       return;
     }
     try {
+      setFetching(true);
       const res = await fetch("/api/wishlist");
       if (!res.ok) return;
       const data = await res.json();
       setItems(data.items ?? []);
     } catch (err) {
       console.error("Failed to load wishlist", err);
+    } finally {
+      setFetching(false);
     }
   };
 
@@ -56,7 +65,6 @@ export function WishlistProvider({ children }: { children: ReactNode }) {
 
   const toggleItem = async (item: WishlistItem) => {
     if (status !== "authenticated") {
-      // Optional: redirect to login instead
       console.warn("Must be logged in to use wishlist");
       return;
     }
@@ -64,7 +72,6 @@ export function WishlistProvider({ children }: { children: ReactNode }) {
     setLoading(true);
     const alreadyIn = isInWishlist(item.id);
 
-    // optimistic update
     setItems((prev) =>
       alreadyIn ? prev.filter((i) => i.id !== item.id) : [...prev, item],
     );
@@ -75,11 +82,9 @@ export function WishlistProvider({ children }: { children: ReactNode }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ item }),
       });
-
       if (!res.ok) throw new Error("Wishlist update failed");
     } catch (err) {
       console.error(err);
-      // revert on failure
       setItems((prev) =>
         alreadyIn ? [...prev, item] : prev.filter((i) => i.id !== item.id),
       );
@@ -88,9 +93,37 @@ export function WishlistProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const removeItem = async (id: string) => {
+    setLoading(true);
+    const removed = items.find((i) => i.id === id);
+    setItems((prev) => prev.filter((i) => i.id !== id));
+
+    try {
+      const res = await fetch("/api/wishlist", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ item: { id } }),
+      });
+      if (!res.ok) throw new Error("Failed to remove item");
+    } catch (err) {
+      console.error(err);
+      if (removed) setItems((prev) => [...prev, removed]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <WishlistContext.Provider
-      value={{ items, loading, toggleItem, isInWishlist, refreshWishlist }}
+      value={{
+        items,
+        loading,
+        fetching,
+        toggleItem,
+        removeItem,
+        isInWishlist,
+        refreshWishlist,
+      }}
     >
       {children}
     </WishlistContext.Provider>
