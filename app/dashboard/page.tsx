@@ -10,75 +10,34 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { useSession } from "next-auth/react";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import clientPromise from "@/lib/db";
 
-const statCards = [
-  {
-    label: "Total Orders",
-    value: 12,
-    sub: "View all orders",
-    href: "/dashboard/orders",
-    icon: Package,
-    color: "text-blue-600 bg-blue-50",
-  },
-  {
-    label: "Pending",
-    value: 2,
-    sub: "Awaiting payment",
-    href: "/dashboard/orders?tab=pending",
-    icon: Clock,
-    color: "text-orange-500 bg-orange-50",
-  },
-  {
-    label: "Delivered",
-    value: 8,
-    sub: "Completed orders",
-    href: "/dashboard/orders?tab=delivered",
-    icon: CheckCircle,
-    color: "text-green-600 bg-green-50",
-  },
-  {
-    label: "Wishlist Items",
-    value: 6,
-    sub: "View wishlist",
-    href: "/dashboard/wishlist",
-    icon: Heart,
-    color: "text-red-500 bg-red-50",
-  },
-];
+interface OrderItem {
+  productId: string;
+  name: string;
+  image: string;
+  price: number;
+  quantity: number;
+}
 
-const recentOrders = [
-  {
-    id: "#SB10012",
-    date: "May 15, 2025",
-    items: 3,
-    total: "$340.03",
-    status: "Delivered",
-  },
-  {
-    id: "#SB10011",
-    date: "May 10, 2025",
-    items: 2,
-    total: "$180.00",
-    status: "Shipped",
-  },
-  {
-    id: "#SB10010",
-    date: "May 05, 2025",
-    items: 1,
-    total: "$89.99",
-    status: "Delivered",
-  },
-  {
-    id: "#SB10009",
-    date: "Apr 28, 2025",
-    items: 4,
-    total: "$560.45",
-    status: "Delivered",
-  },
-];
+interface OrderDoc {
+  orderId: string;
+  userId: string;
+  items: OrderItem[];
+  totalAmount: number;
+  status: "Pending" | "Shipped" | "Delivered" | "Cancelled";
+  createdAt: Date | string;
+}
+
+interface RecentOrder {
+  id: string;
+  date: string;
+  items: number;
+  total: string;
+  status: string;
+}
 
 const statusStyles: Record<string, string> = {
   Delivered: "bg-green-100 text-green-700 border-green-200",
@@ -87,8 +46,100 @@ const statusStyles: Record<string, string> = {
   Cancelled: "bg-red-100 text-red-700 border-red-200",
 };
 
+async function getDashboardData(userId: string) {
+  const client = await clientPromise;
+  const db = client.db();
+
+  const ordersCollection = db.collection<OrderDoc>("orders");
+  const wishlistCollection = db.collection("wishlist");
+
+  const [
+    totalOrders,
+    pendingOrders,
+    deliveredOrders,
+    wishlistCount,
+    recentOrdersRaw,
+  ] = await Promise.all([
+    ordersCollection.countDocuments({ userId }),
+    ordersCollection.countDocuments({ userId, status: "Pending" }),
+    ordersCollection.countDocuments({ userId, status: "Delivered" }),
+    wishlistCollection.countDocuments({ userId }),
+    ordersCollection
+      .find({ userId })
+      .sort({ createdAt: -1 })
+      .limit(4)
+      .toArray(),
+  ]);
+
+  const recentOrders: RecentOrder[] = recentOrdersRaw.map((order) => ({
+    id: `#${order.orderId}`,
+    date: new Date(order.createdAt).toLocaleDateString("en-US", {
+      month: "short",
+      day: "2-digit",
+      year: "numeric",
+    }),
+    items: order.items.length,
+    total: `$${order.totalAmount.toFixed(2)}`,
+    status: order.status,
+  }));
+
+  return {
+    totalOrders,
+    pendingOrders,
+    deliveredOrders,
+    wishlistCount,
+    recentOrders,
+  };
+}
+
 export default async function DashboardOverviewPage() {
   const session = await getServerSession(authOptions);
+  const userId = (session?.user as { id?: string } | undefined)?.id;
+
+  const data = userId
+    ? await getDashboardData(userId)
+    : {
+        totalOrders: 0,
+        pendingOrders: 0,
+        deliveredOrders: 0,
+        wishlistCount: 0,
+        recentOrders: [] as RecentOrder[],
+      };
+
+  const statCards = [
+    {
+      label: "Total Orders",
+      value: data.totalOrders,
+      sub: "View all orders",
+      href: "/dashboard/orders",
+      icon: Package,
+      color: "text-blue-600 bg-blue-50",
+    },
+    {
+      label: "Pending",
+      value: data.pendingOrders,
+      sub: "Awaiting payment",
+      href: "/dashboard/orders?tab=pending",
+      icon: Clock,
+      color: "text-orange-500 bg-orange-50",
+    },
+    {
+      label: "Delivered",
+      value: data.deliveredOrders,
+      sub: "Completed orders",
+      href: "/dashboard/orders?tab=delivered",
+      icon: CheckCircle,
+      color: "text-green-600 bg-green-50",
+    },
+    {
+      label: "Wishlist Items",
+      value: data.wishlistCount,
+      sub: "View wishlist",
+      href: "/dashboard/wishlist",
+      icon: Heart,
+      color: "text-red-500 bg-red-50",
+    },
+  ];
 
   return (
     <div className="space-y-6">
@@ -97,7 +148,7 @@ export default async function DashboardOverviewPage() {
         <div className="flex items-start justify-between">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">
-              Welcome back, {session?.user.name}
+              Welcome back, {session?.user?.name ?? "Guest"}
             </h1>
             <p className="text-gray-500 text-sm mt-1">
               Here's what's happening with your account today.
@@ -147,70 +198,76 @@ export default async function DashboardOverviewPage() {
           </Link>
         </CardHeader>
         <CardContent className="p-0">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-gray-100 bg-gray-50">
-                  <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                    Order ID
-                  </th>
-                  <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                    Date
-                  </th>
-                  <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                    Items
-                  </th>
-                  <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                    Total
-                  </th>
-                  <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                    Status
-                  </th>
-                  <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                    Action
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {recentOrders.map((order) => (
-                  <tr
-                    key={order.id}
-                    className="hover:bg-gray-50 transition-colors"
-                  >
-                    <td className="px-6 py-4 font-semibold text-green-600">
-                      {order.id}
-                    </td>
-                    <td className="px-6 py-4 text-gray-600">{order.date}</td>
-                    <td className="px-6 py-4 text-gray-600">{order.items}</td>
-                    <td className="px-6 py-4 font-semibold text-gray-900">
-                      {order.total}
-                    </td>
-                    <td className="px-6 py-4">
-                      <Badge
-                        variant="outline"
-                        className={`text-xs font-medium ${statusStyles[order.status]}`}
-                      >
-                        {order.status}
-                      </Badge>
-                    </td>
-                    <td className="px-6 py-4">
-                      <Link
-                        href={`/dashboard/orders/${order.id.replace("#", "")}`}
-                      >
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="text-green-600 hover:bg-green-50 text-xs h-7 px-3 gap-1"
-                        >
-                          <Eye className="w-3 h-3" /> View
-                        </Button>
-                      </Link>
-                    </td>
+          {data.recentOrders.length === 0 ? (
+            <div className="p-12 text-center text-gray-400">
+              <p className="text-sm font-medium">No orders yet</p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-gray-100 bg-gray-50">
+                    <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                      Order ID
+                    </th>
+                    <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                      Date
+                    </th>
+                    <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                      Items
+                    </th>
+                    <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                      Total
+                    </th>
+                    <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                      Status
+                    </th>
+                    <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                      Action
+                    </th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {data.recentOrders.map((order) => (
+                    <tr
+                      key={order.id}
+                      className="hover:bg-gray-50 transition-colors"
+                    >
+                      <td className="px-6 py-4 font-semibold text-green-600">
+                        {order.id}
+                      </td>
+                      <td className="px-6 py-4 text-gray-600">{order.date}</td>
+                      <td className="px-6 py-4 text-gray-600">{order.items}</td>
+                      <td className="px-6 py-4 font-semibold text-gray-900">
+                        {order.total}
+                      </td>
+                      <td className="px-6 py-4">
+                        <Badge
+                          variant="outline"
+                          className={`text-xs font-medium ${statusStyles[order.status]}`}
+                        >
+                          {order.status}
+                        </Badge>
+                      </td>
+                      <td className="px-6 py-4">
+                        <Link
+                          href={`/dashboard/orders/${order.id.replace("#", "")}`}
+                        >
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-green-600 hover:bg-green-50 text-xs h-7 px-3 gap-1"
+                          >
+                            <Eye className="w-3 h-3" /> View
+                          </Button>
+                        </Link>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </CardContent>
       </Card>
 
