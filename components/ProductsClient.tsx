@@ -8,6 +8,7 @@ import {
   ShoppingCart,
   Check,
   Star,
+  Heart,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -19,7 +20,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useCart } from "@/context/CartContext";
-import type { Product } from "@/lib/data/products";
+import { useWishlist } from "@/context/WishlistContext";
+import type { Product } from "@/types/product";
 import Link from "next/link";
 
 export default function ProductsClient({ products }: { products: Product[] }) {
@@ -27,6 +29,7 @@ export default function ProductsClient({ products }: { products: Product[] }) {
   const [category, setCategory] = useState("all");
   const [sort, setSort] = useState("default");
   const { addItem, items } = useCart();
+  const { toggleItem, isInWishlist, loading: wishlistLoading } = useWishlist();
 
   const categories = useMemo(
     () => ["all", ...Array.from(new Set(products.map((p) => p.category)))],
@@ -64,10 +67,10 @@ export default function ProductsClient({ products }: { products: Product[] }) {
   }, [products, search, category, sort]);
 
   const inCart = (id: string) => items.some((i) => i.id === id);
-  console.log(filtered);
+
   return (
     <>
-      {/* Filters — no cart count here */}
+      {/* Filters */}
       <div className="mb-6 flex flex-wrap items-center gap-3">
         <div className="relative min-w-48 flex-1">
           <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
@@ -119,80 +122,130 @@ export default function ProductsClient({ products }: { products: Product[] }) {
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {filtered.map((product) => (
-            <div
-              key={product._id}
-              className="group flex flex-col rounded-xl border bg-card shadow-sm transition-shadow hover:shadow-md"
-            >
-              <Link
-                href={`/products/${product._id}`}
-                className="relative aspect-square overflow-hidden rounded-t-xl bg-muted"
-              >
-                {product.image ? (
-                  <Image
-                    src={product.image}
-                    alt={product.title}
-                    fill
-                    className="object-cover transition-transform duration-300 group-hover:scale-105"
-                  />
-                ) : (
-                  <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
-                    No image
-                  </div>
-                )}
-              </Link>
+          {filtered.map((product) => {
+            const outOfStock = product.stock <= 0;
+            const lowStock = !outOfStock && product.stock <= 5;
+            const wishlisted = isInWishlist(product._id);
 
-              <div className="flex flex-1 flex-col gap-2 p-4">
-                <div className="flex justify-between">
-                  <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                    {product.category}
-                  </span>
-                  <span className="flex items-center font-medium tracking-wide">
-                    <Star className="h-4 w-4 text-yellow-400 fill-yellow-400" />
-                    <span className="ml-1">{product.rating}</span>
-                  </span>
-                </div>
-                <Link
-                  href={`/products/${product._id}`}
-                  className="font-semibold leading-tight hover:text-green-900"
-                >
-                  {product.title}
-                </Link>
-                {product.description && (
-                  <p className="line-clamp-2 text-sm text-muted-foreground">
-                    {product.description}
-                  </p>
-                )}
-                <div className="mt-auto flex items-center justify-between pt-2">
-                  <span className="text-lg font-bold">
-                    ${product.price.toFixed(2)}
-                  </span>
-                  <Button
-                    size="sm"
-                    variant={inCart(product._id) ? "secondary" : "default"}
+            return (
+              <div
+                key={product._id}
+                className="group flex flex-col rounded-xl border bg-card shadow-sm transition-shadow hover:shadow-md"
+              >
+                <div className="relative aspect-square overflow-hidden rounded-t-xl bg-muted">
+                  <Link
+                    href={`/products/${product._id}`}
+                    className="block h-full w-full"
+                  >
+                    {product.image ? (
+                      <Image
+                        src={product.image}
+                        alt={product.title}
+                        fill
+                        className={`object-cover transition-transform duration-300 group-hover:scale-105 ${
+                          outOfStock ? "opacity-50 grayscale" : ""
+                        }`}
+                      />
+                    ) : (
+                      <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
+                        No image
+                      </div>
+                    )}
+                  </Link>
+
+                  {outOfStock && (
+                    <span className="absolute left-2 top-2 rounded-full bg-black/80 px-2 py-1 text-xs font-medium text-white">
+                      Out of Stock
+                    </span>
+                  )}
+                  {lowStock && (
+                    <span className="absolute left-2 top-2 rounded-full bg-orange-500 px-2 py-1 text-xs font-medium text-white">
+                      Only {product.stock} left
+                    </span>
+                  )}
+
+                  <button
                     onClick={() =>
-                      addItem({
+                      toggleItem({
                         id: product._id,
                         name: product.title,
                         price: product.price,
                         image: product.image ?? "",
+                        category: product.category,
+                        inStock: !outOfStock,
                       })
                     }
+                    disabled={wishlistLoading}
+                    aria-label={
+                      wishlisted ? "Remove from wishlist" : "Add to wishlist"
+                    }
+                    className="absolute right-2 top-2 rounded-full bg-white/90 p-1.5 shadow-md transition-transform hover:scale-110 disabled:opacity-50"
                   >
-                    {inCart(product._id) ? (
-                      <>
-                        <Check className="mr-1.5 size-4" /> Added
-                      </>
-                    ) : (
-                      <>
-                        <ShoppingCart className="mr-1.5 size-4" /> Add to Cart
-                      </>
-                    )}
-                  </Button>
+                    <Heart
+                      className={`size-4 transition-colors ${
+                        wishlisted
+                          ? "fill-red-500 text-red-500"
+                          : "text-gray-500"
+                      }`}
+                    />
+                  </button>
+                </div>
+
+                <div className="flex flex-1 flex-col gap-2 p-4">
+                  <div className="flex justify-between">
+                    <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                      {product.category}
+                    </span>
+                    <span className="flex items-center font-medium tracking-wide">
+                      <Star className="h-4 w-4 text-yellow-400 fill-yellow-400" />
+                      <span className="ml-1">{product.rating}</span>
+                    </span>
+                  </div>
+                  <Link
+                    href={`/products/${product._id}`}
+                    className="font-semibold leading-tight hover:text-green-900"
+                  >
+                    {product.title}
+                  </Link>
+                  {product.description && (
+                    <p className="line-clamp-2 text-sm text-muted-foreground">
+                      {product.description}
+                    </p>
+                  )}
+                  <div className="mt-auto flex items-center justify-between pt-2">
+                    <span className="text-lg font-bold">
+                      ${product.price.toFixed(2)}
+                    </span>
+                    <Button
+                      size="sm"
+                      variant={inCart(product._id) ? "secondary" : "default"}
+                      disabled={outOfStock}
+                      onClick={() =>
+                        addItem({
+                          id: product._id,
+                          name: product.title,
+                          price: product.price,
+                          image: product.image ?? "",
+                        })
+                      }
+                    >
+                      {outOfStock ? (
+                        "Sold Out"
+                      ) : inCart(product._id) ? (
+                        <>
+                          <Check className="mr-1.5 size-4" /> Added
+                        </>
+                      ) : (
+                        <>
+                          <ShoppingCart className="mr-1.5 size-4" /> Add to Cart
+                        </>
+                      )}
+                    </Button>
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </>
