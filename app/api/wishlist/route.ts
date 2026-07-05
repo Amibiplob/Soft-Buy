@@ -3,6 +3,15 @@ import { getServerSession } from "next-auth";
 import clientPromise from "@/lib/db";
 import { authOptions } from "@/lib/auth";
 
+interface WishlistItem {
+  id: string;
+  [key: string]: unknown;
+}
+
+interface Wishlist {
+  userEmail: string;
+  items: WishlistItem[];
+}
 
 export async function GET() {
   const session = await getServerSession(authOptions);
@@ -14,7 +23,7 @@ export async function GET() {
   const db = client.db();
 
   const user = await db
-    .collection("wishlists")
+    .collection<Wishlist>("wishlists")
     .findOne({ userEmail: session.user.email });
 
   return NextResponse.json({ items: user?.items ?? [] });
@@ -31,7 +40,7 @@ export async function POST(req: NextRequest) {
   const db = client.db();
 
   await db
-    .collection("wishlists")
+    .collection<Wishlist>("wishlists")
     .updateOne(
       { userEmail: session.user.email },
       { $addToSet: { items: item } },
@@ -52,7 +61,7 @@ export async function DELETE(req: NextRequest) {
   const db = client.db();
 
   await db
-    .collection("wishlists")
+    .collection<Wishlist>("wishlists")
     .updateOne(
       { userEmail: session.user.email },
       { $pull: { items: { id: item.id } } },
