@@ -513,7 +513,7 @@ export default function AccountSettingsForm({
       </Card>
 
       {/* Notification Preferences */}
-      <Card className="border-gray-200 shadow-sm lg:col-span-2">
+      {/* <Card className="border-gray-200 shadow-sm lg:col-span-2">
         <CardHeader className="pb-4">
           <CardTitle className="text-base font-semibold text-gray-900">
             Notification Preferences
@@ -554,7 +554,7 @@ export default function AccountSettingsForm({
             })}
           </div>
         </CardContent>
-      </Card>
+      </Card> */}
     </div>
   );
 }

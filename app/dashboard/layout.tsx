@@ -9,7 +9,6 @@ import {
   MapPin,
   CreditCard,
   Settings,
-  Star,
   LogOut,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -43,7 +42,7 @@ export default function DashboardLayout({
     router.refresh();
   };
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className=" bg-gray-50">
       <div className="container mx-auto px-4 py-6 flex flex-col md:flex-row gap-6">
         {/* Sidebar */}
         <aside className="md:w-56 shrink-0">
