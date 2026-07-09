@@ -1,51 +1,167 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { useParams } from "next/navigation";
 import Link from "next/link";
-import { ChevronRight, Download } from "lucide-react";
+import { ChevronRight, Download, PackageX } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 
-const orderItems = [
-  {
-    id: 1,
-    name: "Wireless Headphones",
-    category: "Electronics",
-    image:
-      "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=56&h=56&fit=crop",
-    price: "$59.99",
-    qty: 1,
-    subtotal: "$59.99",
-  },
-  {
-    id: 2,
-    name: "Smart Watch",
-    category: "Electronics",
-    image:
-      "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=56&h=56&fit=crop",
-    price: "$89.99",
-    qty: 1,
-    subtotal: "$89.99",
-  },
-  {
-    id: 3,
-    name: "Running Shoes",
-    category: "Fashion",
-    image:
-      "https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=56&h=56&fit=crop",
-    price: "$60.99",
-    qty: 1,
-    subtotal: "$60.99",
-  },
-];
+interface OrderItem {
+  productId: string;
+  name: string;
+  image: string;
+  price: number;
+  quantity: number;
+}
 
-export default function OrderDetailPage({
-  params,
-}: {
-  params: { id: string };
-}) {
+interface ShippingAddress {
+  fullName: string;
+  email: string;
+  phone: string;
+  address: string;
+  address2?: string;
+  city: string;
+  state: string;
+  country: string;
+}
+
+interface OrderDetail {
+  id: string;
+  status: "Pending" | "Shipped" | "Delivered" | "Cancelled";
+  createdAt: string;
+  items: OrderItem[];
+  subtotal: number;
+  shippingCost: number;
+  tax: number;
+  totalAmount: number;
+  shippingAddress: ShippingAddress;
+  paymentMethod: "card" | "paypal" | "cod";
+  cardLast4: string | null;
+}
+
+const statusStyles: Record<string, string> = {
+  Delivered: "bg-green-100 text-green-700 border-green-200",
+  Shipped: "bg-blue-100 text-blue-700 border-blue-200",
+  Pending: "bg-orange-100 text-orange-700 border-orange-200",
+  Cancelled: "bg-red-100 text-red-700 border-red-200",
+};
+
+const fmt = (n: number) =>
+  n.toLocaleString("en-US", { style: "currency", currency: "USD" });
+
+function OrderDetailSkeleton() {
   return (
     <div className="space-y-5">
-      {/* Breadcrumb */}
+      <div className="h-4 w-40 bg-gray-100 rounded animate-pulse" />
+      <div className="h-7 w-56 bg-gray-200 rounded animate-pulse" />
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+        <div className="lg:col-span-2">
+          <div className="h-72 bg-white rounded-xl border border-gray-200 animate-pulse" />
+        </div>
+        <div className="space-y-4">
+          <div className="h-40 bg-white rounded-xl border border-gray-200 animate-pulse" />
+          <div className="h-32 bg-white rounded-xl border border-gray-200 animate-pulse" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default function OrderDetailPage() {
+  const params = useParams();
+  const id = params.id as string;
+
+  const [order, setOrder] = useState<OrderDetail | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let ignore = false;
+
+    async function fetchOrder() {
+      try {
+        setLoading(true);
+        setError(null);
+        const res = await fetch(`/api/orders/${id}`);
+        if (res.status === 404) throw new Error("Order not found");
+        if (!res.ok) throw new Error("Failed to load order");
+        const data: OrderDetail = await res.json();
+        if (!ignore) setOrder(data);
+      } catch (err) {
+        if (!ignore) {
+          setError(err instanceof Error ? err.message : "Something went wrong");
+        }
+      } finally {
+        if (!ignore) setLoading(false);
+      }
+    }
+
+    fetchOrder();
+    return () => {
+      ignore = true;
+    };
+  }, [id]);
+
+  if (loading) return <OrderDetailSkeleton />;
+
+  if (error || !order) {
+    return (
+      <div className="space-y-5">
+        <nav className="flex items-center gap-1.5 text-sm text-gray-500">
+          <Link href="/" className="hover:text-green-600">
+            Home
+          </Link>
+          <ChevronRight className="w-3.5 h-3.5" />
+          <Link href="/dashboard/orders" className="hover:text-green-600">
+            Orders
+          </Link>
+        </nav>
+
+        <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-16 text-center">
+          <PackageX className="w-12 h-12 text-gray-200 mx-auto mb-3" />
+          <p className="text-gray-500 font-medium mb-4">
+            {error ?? "Order not found"}
+          </p>
+          <Link href="/dashboard/orders">
+            <Button
+              size="sm"
+              className="bg-green-600 hover:bg-green-700 text-white"
+            >
+              Back to Orders
+            </Button>
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  const placedOn = new Date(order.createdAt).toLocaleDateString("en-US", {
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+  });
+
+  const paymentLabel =
+    order.paymentMethod === "card"
+      ? order.cardLast4
+        ? `Card ending in ${order.cardLast4}`
+        : "Credit / Debit Card"
+      : order.paymentMethod === "paypal"
+        ? "PayPal"
+        : "Cash on Delivery";
+
+  const paymentBadgeText =
+    order.paymentMethod === "card"
+      ? "Card"
+      : order.paymentMethod === "paypal"
+        ? "PayPal"
+        : "COD";
+
+  return (
+    <div className="space-y-5">
       <nav className="flex items-center gap-1.5 text-sm text-gray-500">
         <Link href="/" className="hover:text-green-600">
           Home
@@ -58,23 +174,26 @@ export default function OrderDetailPage({
         <span className="text-gray-800 font-medium">Order Details</span>
       </nav>
 
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
+      <div className="flex items-center justify-between flex-wrap gap-3">
+        <div className="flex items-center gap-3 flex-wrap">
           <h1 className="text-2xl font-bold text-gray-900">Order Details</h1>
           <div className="flex items-center gap-2 text-sm text-gray-500">
             <span className="font-mono font-semibold text-gray-700">
-              #{params.id}
+              #{order.id}
             </span>
-            <Badge className="bg-green-100 text-green-700 border-green-200 border text-xs font-medium">
-              Delivered
+            <Badge
+              variant="outline"
+              className={`text-xs font-medium ${statusStyles[order.status]}`}
+            >
+              {order.status}
             </Badge>
-            <span>Placed on May 15, 2025</span>
+            <span>Placed on {placedOn}</span>
           </div>
         </div>
         <Button
           size="sm"
           variant="outline"
+          onClick={() => window.print()}
           className="border-green-600 text-green-600 hover:bg-green-50 gap-1.5 text-sm"
         >
           <Download className="w-4 h-4" />
@@ -83,9 +202,7 @@ export default function OrderDetailPage({
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-        {/* Left: Items + Summary */}
         <div className="lg:col-span-2 space-y-4">
-          {/* Order Items */}
           <Card className="border-gray-200 shadow-sm">
             <CardHeader className="pb-3">
               <CardTitle className="text-base font-semibold text-gray-900">
@@ -112,35 +229,35 @@ export default function OrderDetailPage({
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100">
-                    {orderItems.map((item) => (
-                      <tr key={item.id} className="hover:bg-gray-50">
+                    {order.items.map((item) => (
+                      <tr key={item.productId} className="hover:bg-gray-50">
                         <td className="px-5 py-4">
                           <div className="flex items-center gap-3">
                             <div className="w-12 h-12 rounded-lg overflow-hidden bg-gray-100 shrink-0 border border-gray-200">
-                              <img
-                                src={item.image}
-                                alt={item.name}
-                                className="w-full h-full object-cover"
-                              />
+                              {item.image && (
+                                <img
+                                  src={item.image}
+                                  alt={item.name}
+                                  className="w-full h-full object-cover"
+                                />
+                              )}
                             </div>
-                            <div>
-                              <p className="font-semibold text-gray-900">
-                                {item.name}
-                              </p>
-                              <p className="text-xs text-gray-400">
-                                {item.category}
-                              </p>
-                            </div>
+                            <Link
+                              href={`/products/${item.productId}`}
+                              className="font-semibold text-gray-900 hover:text-green-600"
+                            >
+                              {item.name}
+                            </Link>
                           </div>
                         </td>
                         <td className="px-5 py-4 text-right text-gray-700">
-                          {item.price}
+                          {fmt(item.price)}
                         </td>
                         <td className="px-5 py-4 text-right text-gray-700">
-                          x{item.qty}
+                          x{item.quantity}
                         </td>
                         <td className="px-5 py-4 text-right font-semibold text-gray-900">
-                          {item.subtotal}
+                          {fmt(item.price * item.quantity)}
                         </td>
                       </tr>
                     ))}
@@ -148,7 +265,6 @@ export default function OrderDetailPage({
                 </table>
               </div>
 
-              {/* Order Summary */}
               <div className="px-5 py-4 bg-gray-50 border-t border-gray-100">
                 <h3 className="text-sm font-semibold text-gray-700 mb-3">
                   Order Summary
@@ -156,20 +272,32 @@ export default function OrderDetailPage({
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between text-gray-600">
                     <span>Subtotal</span>
-                    <span>$210.97</span>
+                    <span>{fmt(order.subtotal)}</span>
                   </div>
                   <div className="flex justify-between text-gray-600">
                     <span>Shipping</span>
-                    <span className="text-green-600 font-medium">Free</span>
+                    <span
+                      className={
+                        order.shippingCost === 0
+                          ? "text-green-600 font-medium"
+                          : undefined
+                      }
+                    >
+                      {order.shippingCost === 0
+                        ? "Free"
+                        : fmt(order.shippingCost)}
+                    </span>
                   </div>
                   <div className="flex justify-between text-gray-600">
                     <span>Tax</span>
-                    <span>$18.06</span>
+                    <span>{fmt(order.tax)}</span>
                   </div>
                   <Separator className="my-2" />
                   <div className="flex justify-between font-bold text-gray-900 text-base">
                     <span>Total</span>
-                    <span className="text-green-600">$229.03</span>
+                    <span className="text-green-600">
+                      {fmt(order.totalAmount)}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -177,9 +305,7 @@ export default function OrderDetailPage({
           </Card>
         </div>
 
-        {/* Right: Shipping + Payment */}
         <div className="space-y-4">
-          {/* Shipping Address */}
           <Card className="border-gray-200 shadow-sm">
             <CardHeader className="pb-3">
               <CardTitle className="text-base font-semibold text-gray-900">
@@ -187,15 +313,22 @@ export default function OrderDetailPage({
               </CardTitle>
             </CardHeader>
             <CardContent className="text-sm text-gray-600 space-y-1">
-              <p className="font-semibold text-gray-900">John Doe</p>
-              <p>123 Green Street</p>
-              <p>New York, NY 10001</p>
-              <p>United States</p>
-              <p className="mt-2">+1 123-456-7890</p>
+              <p className="font-semibold text-gray-900">
+                {order.shippingAddress.fullName}
+              </p>
+              <p>{order.shippingAddress.address}</p>
+              {order.shippingAddress.address2 && (
+                <p>{order.shippingAddress.address2}</p>
+              )}
+              <p>
+                {order.shippingAddress.city}, {order.shippingAddress.state}
+              </p>
+              <p>{order.shippingAddress.country}</p>
+              <p className="mt-2">{order.shippingAddress.phone}</p>
+              <p className="text-gray-400">{order.shippingAddress.email}</p>
             </CardContent>
           </Card>
 
-          {/* Payment Method */}
           <Card className="border-gray-200 shadow-sm">
             <CardHeader className="pb-3">
               <CardTitle className="text-base font-semibold text-gray-900">
@@ -204,18 +337,16 @@ export default function OrderDetailPage({
             </CardHeader>
             <CardContent className="text-sm text-gray-600 space-y-2">
               <div className="flex items-center gap-2">
-                <div className="w-10 h-6 bg-blue-600 rounded text-white text-[10px] font-bold flex items-center justify-center">
-                  VISA
+                <div className="w-12 h-6 bg-blue-600 rounded text-white text-[10px] font-bold flex items-center justify-center uppercase">
+                  {paymentBadgeText}
                 </div>
-                <span>Visa ending in 4242</span>
+                <span>{paymentLabel}</span>
               </div>
-              <p className="text-gray-500 text-xs">
-                Paid on May 15, 2025 – 10:30 AM
-              </p>
+              <p className="text-gray-500 text-xs">Placed on {placedOn}</p>
               <Separator className="my-2" />
               <div className="flex justify-between font-bold text-gray-900">
                 <span>Total Paid</span>
-                <span className="text-green-600">$229.03</span>
+                <span className="text-green-600">{fmt(order.totalAmount)}</span>
               </div>
             </CardContent>
           </Card>
