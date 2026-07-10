@@ -24,7 +24,7 @@ import { toast } from "sonner";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-type PaymentMethod = "card" | "paypal" | "cod";
+type PaymentMethod = "card" | "cod";
 
 interface ShippingForm {
   fullName: string;
@@ -118,15 +118,6 @@ function AmexIcon() {
         AMEX
       </text>
     </svg>
-  );
-}
-
-function PayPalLogo() {
-  return (
-    <span className="font-extrabold text-lg tracking-tight">
-      <span className="text-[#003087]">Pay</span>
-      <span className="text-[#009CDE]">Pal</span>
-    </span>
   );
 }
 
@@ -270,6 +261,8 @@ export default function CheckoutPage() {
       return;
     }
 
+    // Card details are only relevant when paying by card AND not reusing a
+    // saved card. COD never needs card info at all.
     const usingNewCard =
       paymentMethod === "card" && !(useSavedCard && savedCard);
 
@@ -306,6 +299,7 @@ export default function CheckoutPage() {
           paymentMethod,
           // Card data never leaves the browser beyond a reference —
           // either the saved card's id, or just the last 4 of a new card.
+          // Nothing card-related is sent at all for COD.
           ...(paymentMethod === "card" && useSavedCard && savedCard
             ? { paymentMethodId: savedCard._id, cardLast4: savedCard.last4 }
             : paymentMethod === "card"
@@ -576,30 +570,6 @@ export default function CheckoutPage() {
                   )}
                 </div>
               )}
-            </div>
-
-            {/* PayPal */}
-            <div
-              className={cn(
-                "rounded-lg border p-4 transition-colors cursor-pointer",
-                paymentMethod === "paypal"
-                  ? "border-green-600 bg-green-50 dark:bg-green-950/30"
-                  : "border-border hover:border-muted-foreground/40",
-              )}
-              onClick={() => setPaymentMethod("paypal")}
-            >
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <RadioGroupItem value="paypal" id="paypal" />
-                  <Label
-                    htmlFor="paypal"
-                    className="cursor-pointer font-medium"
-                  >
-                    PayPal
-                  </Label>
-                </div>
-                <PayPalLogo />
-              </div>
             </div>
 
             {/* Cash on Delivery */}
