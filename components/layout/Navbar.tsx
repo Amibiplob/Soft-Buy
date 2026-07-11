@@ -20,7 +20,7 @@ const navLinks = [
 export default function Navbar() {
   return (
     <nav className="w-full border-b sticky top-0 z-50 bg-slate-50">
-      <div className="container mx-auto px-4 flex items-center py-4">
+      <div className="container mx-auto flex items-center py-4">
         {/* Logo */}
         <Link href="/" className="flex items-center gap-2">
           <Image src="/icon.png" width={20} height={20} alt="logo" />
