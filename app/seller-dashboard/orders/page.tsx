@@ -1,83 +1,148 @@
 "use client";
 
-import { useState } from "react";
-import { Eye, Download, Search, Filter } from "lucide-react";
+import { useEffect, useState, useCallback } from "react";
+import Link from "next/link";
+import {
+  Eye,
+  Download,
+  Search,
+  Filter,
+  Loader2,
+  ChevronDown,
+} from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  ORDER_STATUSES,
+  STATUS_TRANSITIONS,
+  STATUS_STYLE,
+  OrderStatus,
+} from "@/lib/orderStatus";
 
-const TABS = [
-  "All (12)",
-  "Pending (3)",
-  "Processing (4)",
-  "Shipped (3)",
-  "Delivered (2)",
-  "Cancelled (0)",
-];
+const TAB_LIST: ("All" | OrderStatus)[] = ["All", ...ORDER_STATUSES];
 
-const orders = [
-  {
-    id: "#SB10012",
-    customer: "John Doe",
-    date: "May 15, 2025",
-    total: "$340.03",
-    status: "Delivered",
-  },
-  {
-    id: "#SB10011",
-    customer: "Jane Smith",
-    date: "May 14, 2025",
-    total: "$180.50",
-    status: "Shipped",
-  },
-  {
-    id: "#SB10010",
-    customer: "Robert Brown",
-    date: "May 13, 2025",
-    total: "$210.99",
-    status: "Processing",
-  },
-  {
-    id: "#SB10009",
-    customer: "Emily Davis",
-    date: "May 12, 2025",
-    total: "$560.45",
-    status: "Delivered",
-  },
-  {
-    id: "#SB10008",
-    customer: "Michael Lee",
-    date: "May 11, 2025",
-    total: "$98.99",
-    status: "Shipped",
-  },
-  {
-    id: "#SB10007",
-    customer: "Sarah Wilson",
-    date: "May 10, 2025",
-    total: "$98.99",
-    status: "Pending",
-  },
-];
+interface Order {
+  id: string;
+  orderId: string;
+  customer: string;
+  date: string;
+  total: string;
+  status: OrderStatus;
+}
 
-const statusStyle: Record<string, string> = {
-  Delivered: "bg-green-100 text-green-700 border-green-200",
-  Shipped: "bg-blue-100 text-blue-700 border-blue-200",
-  Processing: "bg-yellow-100 text-yellow-700 border-yellow-200",
-  Pending: "bg-orange-100 text-orange-700 border-orange-200",
-  Cancelled: "bg-red-100 text-red-700 border-red-200",
-};
+interface OrdersResponse {
+  orders: Order[];
+  counts: Record<string, number>;
+  total: number;
+  page: number;
+  totalPages: number;
+}
 
 export default function SellerOrdersPage() {
-  const [tab, setTab] = useState(0);
+  const [activeTab, setActiveTab] = useState<"All" | OrderStatus>("All");
   const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [page, setPage] = useState(1);
+  const [data, setData] = useState<OrdersResponse | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [updatingId, setUpdatingId] = useState<string | null>(null);
+  const [rowError, setRowError] = useState<{
+    id: string;
+    message: string;
+  } | null>(null);
 
-  const rows = orders.filter(
-    (o) =>
-      o.id.toLowerCase().includes(search.toLowerCase()) ||
-      o.customer.toLowerCase().includes(search.toLowerCase()),
-  );
+  useEffect(() => {
+    const t = setTimeout(() => {
+      setDebouncedSearch(search);
+      setPage(1);
+    }, 400);
+    return () => clearTimeout(t);
+  }, [search]);
+
+  const fetchOrders = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const params = new URLSearchParams({
+        status: activeTab,
+        search: debouncedSearch,
+        page: String(page),
+        limit: "6",
+      });
+      const res = await fetch(`/api/seller/orders?${params.toString()}`);
+      if (!res.ok) throw new Error("Failed to load orders");
+      setData(await res.json());
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Something went wrong");
+    } finally {
+      setLoading(false);
+    }
+  }, [activeTab, debouncedSearch, page]);
+
+  useEffect(() => {
+    fetchOrders();
+  }, [fetchOrders]);
+
+  const handleStatusChange = async (order: Order, nextStatus: OrderStatus) => {
+    setUpdatingId(order.orderId);
+    setRowError(null);
+
+    const prevData = data;
+    // optimistic update
+    setData((d) =>
+      d
+        ? {
+            ...d,
+            orders: d.orders.map((o) =>
+              o.orderId === order.orderId ? { ...o, status: nextStatus } : o,
+            ),
+          }
+        : d,
+    );
+
+    try {
+      const res = await fetch(`/api/seller/orders/${order.orderId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: nextStatus }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || "Failed to update status");
+
+      // if we're filtered to a tab that no longer matches, refetch for correct counts/list
+      if (activeTab !== "All" && activeTab !== nextStatus) {
+        fetchOrders();
+      } else {
+        setData((d) =>
+          d
+            ? {
+                ...d,
+                counts: { ...d.counts }, // counts refresh on next full fetch; keep simple here
+              }
+            : d,
+        );
+      }
+    } catch (err) {
+      setData(prevData); // revert
+      setRowError({
+        id: order.orderId,
+        message: err instanceof Error ? err.message : "Update failed",
+      });
+    } finally {
+      setUpdatingId(null);
+    }
+  };
+
+  const counts = data?.counts ?? { All: 0 };
 
   return (
     <div className="space-y-5">
@@ -92,19 +157,21 @@ export default function SellerOrdersPage() {
         </Button>
       </div>
 
-      {/* Tabs */}
       <div className="flex gap-1.5 overflow-x-auto pb-0.5">
-        {TABS.map((t, i) => (
+        {TAB_LIST.map((t) => (
           <button
             key={t}
-            onClick={() => setTab(i)}
+            onClick={() => {
+              setActiveTab(t);
+              setPage(1);
+            }}
             className={`px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-all ${
-              tab === i
+              activeTab === t
                 ? "bg-green-600 text-white shadow-sm"
                 : "bg-white border border-gray-200 text-gray-500 hover:text-gray-800"
             }`}
           >
-            {t}
+            {t} ({counts[t] ?? 0})
           </button>
         ))}
       </div>
@@ -129,79 +196,163 @@ export default function SellerOrdersPage() {
           </Button>
         </CardHeader>
         <CardContent className="p-0">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-gray-100 bg-gray-50">
-                  {[
-                    "Order ID",
-                    "Customer",
-                    "Date",
-                    "Total",
-                    "Status",
-                    "Action",
-                  ].map((h) => (
-                    <th
-                      key={h}
-                      className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide whitespace-nowrap"
-                    >
-                      {h}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {rows.map((o) => (
-                  <tr key={o.id} className="hover:bg-gray-50 transition-colors">
-                    <td className="px-5 py-3.5 font-semibold text-green-600 whitespace-nowrap">
-                      {o.id}
-                    </td>
-                    <td className="px-5 py-3.5 text-gray-700 whitespace-nowrap">
-                      {o.customer}
-                    </td>
-                    <td className="px-5 py-3.5 text-gray-500 whitespace-nowrap">
-                      {o.date}
-                    </td>
-                    <td className="px-5 py-3.5 font-semibold text-gray-900 whitespace-nowrap">
-                      {o.total}
-                    </td>
-                    <td className="px-5 py-3.5">
-                      <Badge
-                        variant="outline"
-                        className={`text-xs font-medium ${statusStyle[o.status]}`}
-                      >
-                        {o.status}
-                      </Badge>
-                    </td>
-                    <td className="px-5 py-3.5">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="text-green-600 hover:bg-green-50 text-xs h-7 px-3 gap-1"
-                      >
-                        <Eye className="w-3 h-3" /> View
-                      </Button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          <div className="flex items-center justify-between px-5 py-3 border-t border-gray-100 text-xs text-gray-500">
-            <span>
-              Showing 1 to {rows.length} of {orders.length} orders
-            </span>
-            <div className="flex gap-1">
-              {[1, 2].map((n) => (
-                <button
-                  key={n}
-                  className={`w-7 h-7 rounded text-xs font-medium ${n === 1 ? "bg-green-600 text-white" : "border border-gray-200 text-gray-600 hover:bg-gray-50"}`}
-                >
-                  {n}
-                </button>
-              ))}
+          {error && (
+            <div className="px-5 py-6 text-sm text-red-600 text-center">
+              {error}
             </div>
-          </div>
+          )}
+
+          {!error && loading && (
+            <div className="flex items-center justify-center py-14 text-gray-400 gap-2 text-sm">
+              <Loader2 className="w-4 h-4 animate-spin" /> Loading orders…
+            </div>
+          )}
+
+          {!error && !loading && data && (
+            <>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-gray-100 bg-gray-50">
+                      {[
+                        "Order ID",
+                        "Customer",
+                        "Date",
+                        "Total",
+                        "Status",
+                        "Action",
+                      ].map((h) => (
+                        <th
+                          key={h}
+                          className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide whitespace-nowrap"
+                        >
+                          {h}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100">
+                    {data.orders.length === 0 && (
+                      <tr>
+                        <td
+                          colSpan={6}
+                          className="px-5 py-10 text-center text-gray-400"
+                        >
+                          No orders found.
+                        </td>
+                      </tr>
+                    )}
+                    {data.orders.map((o) => {
+                      const nextOptions = STATUS_TRANSITIONS[o.status] ?? [];
+                      const isUpdating = updatingId === o.orderId;
+                      return (
+                        <tr
+                          key={o.id}
+                          className="hover:bg-gray-50 transition-colors"
+                        >
+                          <td className="px-5 py-3.5 font-semibold text-green-600 whitespace-nowrap">
+                            {o.id}
+                          </td>
+                          <td className="px-5 py-3.5 text-gray-700 whitespace-nowrap">
+                            {o.customer}
+                          </td>
+                          <td className="px-5 py-3.5 text-gray-500 whitespace-nowrap">
+                            {o.date}
+                          </td>
+                          <td className="px-5 py-3.5 font-semibold text-gray-900 whitespace-nowrap">
+                            {o.total}
+                          </td>
+                          <td className="px-5 py-3.5">
+                            <Badge
+                              variant="outline"
+                              className={`text-xs font-medium ${STATUS_STYLE[o.status]}`}
+                            >
+                              {o.status}
+                            </Badge>
+                            {rowError?.id === o.orderId && (
+                              <p className="text-[11px] text-red-500 mt-1">
+                                {rowError.message}
+                              </p>
+                            )}
+                          </td>
+                          <td className="px-5 py-3.5">
+                            <div className="flex items-center gap-1.5">
+                              <Link href={`/seller/orders/${o.orderId}`}>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="text-green-600 hover:bg-green-50 text-xs h-7 px-2.5 gap-1"
+                                >
+                                  <Eye className="w-3 h-3" /> View
+                                </Button>
+                              </Link>
+
+                              {nextOptions.length > 0 && (
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      disabled={isUpdating}
+                                      className="text-xs h-7 px-2.5 gap-1 border-gray-200 text-gray-600"
+                                    >
+                                      {isUpdating ? (
+                                        <Loader2 className="w-3 h-3 animate-spin" />
+                                      ) : (
+                                        <>
+                                          Update{" "}
+                                          <ChevronDown className="w-3 h-3" />
+                                        </>
+                                      )}
+                                    </Button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent align="end">
+                                    {nextOptions.map((opt) => (
+                                      <DropdownMenuItem
+                                        key={opt}
+                                        onClick={() =>
+                                          handleStatusChange(o, opt)
+                                        }
+                                      >
+                                        Mark as {opt}
+                                      </DropdownMenuItem>
+                                    ))}
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+              <div className="flex items-center justify-between px-5 py-3 border-t border-gray-100 text-xs text-gray-500">
+                <span>
+                  Showing {data.orders.length === 0 ? 0 : (page - 1) * 6 + 1} to{" "}
+                  {(page - 1) * 6 + data.orders.length} of {data.total} orders
+                </span>
+                <div className="flex gap-1">
+                  {Array.from({ length: data.totalPages }, (_, i) => i + 1).map(
+                    (n) => (
+                      <button
+                        key={n}
+                        onClick={() => setPage(n)}
+                        className={`w-7 h-7 rounded text-xs font-medium ${
+                          n === page
+                            ? "bg-green-600 text-white"
+                            : "border border-gray-200 text-gray-600 hover:bg-gray-50"
+                        }`}
+                      >
+                        {n}
+                      </button>
+                    ),
+                  )}
+                </div>
+              </div>
+            </>
+          )}
         </CardContent>
       </Card>
     </div>
