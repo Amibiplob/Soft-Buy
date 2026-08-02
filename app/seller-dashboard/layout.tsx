@@ -15,7 +15,6 @@ import {
   Settings,
   LogOut,
   ShoppingCart,
-
   X,
   ChevronRight,
   Plus,
@@ -24,7 +23,6 @@ import {
 import { cn } from "@/lib/utils";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 
@@ -91,13 +89,11 @@ export default function SellerLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
-
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
-    <div className="min-h-screen bg-slate-50 flex items-start">
+    <div className="min-h-screen bg-slate-50 flex items-start container mx-auto">
       {/* Mobile Overlay */}
-
       {sidebarOpen && (
         <div
           className="fixed inset-0 bg-black/40 z-40 lg:hidden"
@@ -106,24 +102,24 @@ export default function SellerLayout({
       )}
 
       {/* Sidebar */}
-
       <aside
         className={cn(
-          "sticky top-16 self-star h-[calc(100vh-4rem)] w-64 bg-slate-50 border-r border-slate-800 flex flex-col transition-transform duration-300",
+          "sticky top-16 self-start h-[calc(100vh-4rem)] w-20 lg:w-64 bg-slate-50 border-r border-slate-800 flex flex-col transition-all duration-300",
           sidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0",
         )}
       >
         {/* Logo */}
-
-        <div className="h-16 border-b border-slate-800 px-6 flex items-center justify-between">
-          <Link href="/seller-dashboard" className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-green-600 flex items-center justify-center shadow-lg shadow-green-700/30">
+        <div className="h-16 border-b border-slate-800 px-3 lg:px-6 flex items-center justify-between">
+          <Link
+            href="/seller-dashboard"
+            className="flex items-center justify-center lg:justify-start gap-3 w-full"
+          >
+            <div className="w-10 h-10 rounded-xl bg-green-600 flex items-center justify-center shadow-lg shadow-green-700/30 shrink-0">
               <ShoppingCart className="w-5 h-5 text-white" />
             </div>
 
-            <div>
+            <div className="hidden lg:block">
               <h2 className="font-bold text-white">SoftBuy</h2>
-
               <p className="text-xs text-slate-400">Seller Panel</p>
             </div>
           </Link>
@@ -135,19 +131,15 @@ export default function SellerLayout({
             <X className="w-5 h-5" />
           </button>
         </div>
-
         {/* Quick Action */}
-
-        <div className="p-4">
-          <Button className="w-full gap-2 bg-green-600 hover:bg-green-700">
-            <Plus className="w-4 h-4" />
-            Add Product
+        <div className="p-3 lg:p-4">
+          <Button className="w-full justify-center lg:justify-start gap-2 bg-green-600 hover:bg-green-700">
+            <Plus className="w-4 h-4 shrink-0" />
+            <span className="hidden lg:inline">Add Product</span>
           </Button>
         </div>
-
         {/* Navigation */}
-
-        <nav className="flex-1 overflow-y-auto px-3 pb-5">
+        <nav className="flex-1 overflow-y-auto px-2 lg:px-3 pb-5">
           <div className="space-y-1">
             {navigation.map((item) => {
               const active =
@@ -161,19 +153,21 @@ export default function SellerLayout({
                   href={item.href}
                   onClick={() => setSidebarOpen(false)}
                   className={cn(
-                    "group flex items-center justify-between rounded-xl px-4 py-3 transition-all",
+                    "group flex items-center justify-center lg:justify-between rounded-xl px-3 lg:px-4 py-3 transition-all",
                     active
                       ? "bg-green-600 text-white shadow-lg shadow-green-900/20"
                       : "text-slate-400 hover:text-white hover:bg-slate-800",
                   )}
                 >
                   <div className="flex items-center gap-3">
-                    <item.icon className="w-5 h-5" />
+                    <item.icon className="w-5 h-5 shrink-0" />
 
-                    <span className="text-sm font-medium">{item.title}</span>
+                    <span className="hidden lg:inline text-sm font-medium">
+                      {item.title}
+                    </span>
                   </div>
 
-                  <div className="flex items-center gap-2">
+                  <div className="hidden lg:flex items-center gap-2">
                     {item.badge && (
                       <Badge className="bg-red-500 hover:bg-red-500 text-white rounded-full h-5 min-w-5 px-1 text-[10px]">
                         {item.badge}
@@ -186,22 +180,19 @@ export default function SellerLayout({
               );
             })}
           </div>
-        </nav>
-
+        </nav>{" "}
         {/* Seller Card */}
-
-        <div className="border-t border-slate-800 p-4">
+        <div className="border-t border-slate-800 p-3 lg:p-4">
           <div className="rounded-xl bg-slate-800 p-3">
-            <div className="flex items-center gap-3">
-              <Avatar className="h-10 w-10">
+            <div className="flex items-center justify-center lg:justify-start gap-3">
+              <Avatar className="h-10 w-10 shrink-0">
                 <AvatarImage src="/seller-avatar.png" />
-
                 <AvatarFallback className="bg-green-600 text-white font-semibold">
                   SB
                 </AvatarFallback>
               </Avatar>
 
-              <div className="flex-1 min-w-0">
+              <div className="hidden lg:block flex-1 min-w-0">
                 <h4 className="text-sm font-semibold text-white truncate">
                   SoftBuy Store
                 </h4>
@@ -212,19 +203,17 @@ export default function SellerLayout({
 
             <Button
               variant="ghost"
-              className="mt-4 w-full justify-start text-red-400 hover:text-red-300 hover:bg-red-500/10"
+              className="mt-4 w-full justify-center lg:justify-start text-red-400 hover:text-red-300 hover:bg-red-500/10"
             >
-              <LogOut className="mr-2 h-4 w-4" />
-              Logout
+              <LogOut className="h-4 w-4 lg:mr-2" />
+              <span className="hidden lg:inline">Logout</span>
             </Button>
           </div>
         </div>
       </aside>
 
       {/* Main Section */}
-      <div className="flex-1">
-        {/* Page */}
-
+      <div className="flex-1 min-w-0">
         <main className="p-4 lg:p-6">{children}</main>
       </div>
     </div>
