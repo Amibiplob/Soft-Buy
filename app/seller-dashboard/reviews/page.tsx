@@ -47,17 +47,6 @@ const reviews = [
     avatar: "ED",
     status: "Pending",
   },
-  {
-    id: 5,
-    customer: "Michael Lee",
-    rating: 5,
-    product: "Coffee Maker",
-    date: "May 11, 2025",
-    comment:
-      "Best coffee maker I've ever used. Makes perfect coffee every time!",
-    avatar: "ML",
-    status: "Published",
-  },
 ];
 
 function Stars({
