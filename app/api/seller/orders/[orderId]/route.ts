@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import clientPromise from "@/lib/mongodb";
+import clientPromise from "@/lib/db";
 import {
   ORDER_STATUSES,
   STATUS_TRANSITIONS,
@@ -10,7 +10,7 @@ import {
 
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { orderId: string } },
+  { params }: { params: Promise<{ orderId: string }> },
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -18,6 +18,7 @@ export async function PATCH(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    const { orderId } = await params;
     const { status } = (await req.json()) as { status: OrderStatus };
 
     if (!ORDER_STATUSES.includes(status)) {
@@ -29,7 +30,7 @@ export async function PATCH(
     const ordersCollection = db.collection("orders");
 
     const order = await ordersCollection.findOne({
-      orderId: params.orderId,
+      orderId: orderId,
       sellerId: session.user.id,
     });
 
@@ -48,7 +49,7 @@ export async function PATCH(
     }
 
     await ordersCollection.updateOne(
-      { orderId: params.orderId, sellerId: session.user.id },
+      { orderId: orderId, sellerId: session.user.id },
       {
         $set: { status, updatedAt: new Date() },
         $push: { statusHistory: { status, changedAt: new Date() } },
