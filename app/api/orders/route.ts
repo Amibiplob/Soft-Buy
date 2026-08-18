@@ -2,41 +2,12 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import clientPromise from "@/lib/db";
-
-export interface OrderItem {
-  productId: string;
-  name: string;
-  image: string;
-  price: number;
-  quantity: number;
-}
-
-export interface ShippingAddress {
-  fullName: string;
-  email: string;
-  phone: string;
-  address: string;
-  address2?: string;
-  city: string;
-  state: string;
-  country: string;
-}
-
-export interface OrderDocument {
-  orderId: string;
-  userId: string;
-  items: OrderItem[];
-  subtotal: number;
-  shippingCost: number;
-  tax: number;
-  totalAmount: number;
-  status: "Pending" | "Shipped" | "Delivered" | "Cancelled";
-  shippingAddress: ShippingAddress;
-  paymentMethod: "card" | "paypal" | "cod";
-  cardLast4?: string;
-  createdAt: Date;
-  updatedAt: Date;
-}
+import type {
+  OrderDocument,
+  OrderItem,
+  ShippingAddress,
+  PaymentMethod,
+} from "@/types/order";
 
 export async function GET() {
   try {
