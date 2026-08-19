@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import clientPromise from "@/lib/db";
-import type { OrderDocument } from "../route";
+import { OrderDocument } from "@/types/order";
+
 
 type Context = {
   params: Promise<{ id: string }>;
