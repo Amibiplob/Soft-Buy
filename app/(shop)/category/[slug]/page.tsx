@@ -22,10 +22,10 @@ export async function generateMetadata({
   return { title: `${cat.label} | SoftBuy` };
 }
 
-// Pre-render known category pages at build time
-export async function generateStaticParams() {
-  return Object.keys(CATEGORY_MAP).map((slug) => ({ slug }));
-}
+// Category pages are rendered on demand (not at build time) and cached
+// for 5 minutes. This avoids requiring a live database connection during
+// `next build` — a transient DB/auth issue can no longer fail the build.
+export const revalidate = 300;
 
 export default async function CategoryPage({
   params,

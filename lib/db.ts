@@ -1,6 +1,15 @@
 import { MongoClient } from "mongodb";
 
-const uri = process.env.MONGODB_URI!;
+const uri = process.env.MONGODB_URI;
+
+if (!uri) {
+  throw new Error(
+    "MONGODB_URI is not set. Add it to .env.local for local dev, " +
+      "and to your host's project environment variables (e.g. Vercel " +
+      "Project Settings > Environment Variables) for Preview/Production " +
+      "builds — build-time prerendering needs it too, not just runtime.",
+  );
+}
 
 let client: MongoClient;
 let clientPromise: Promise<MongoClient>;
