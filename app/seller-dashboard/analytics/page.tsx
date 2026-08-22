@@ -45,14 +45,36 @@ interface AnalyticsResponse {
   countries: CountryRow[];
 }
 
-const STAT_CONFIG: Record
-  Stat["key"],
+type StatKey = Stat["key"];
+
+const STAT_CONFIG: Record<
+  StatKey,
   { label: string; icon: typeof DollarSign; color: string; currency: boolean }
 > = {
-  sales: { label: "Total Sales", icon: DollarSign, color: "bg-green-50 text-green-600", currency: true },
-  orders: { label: "Total Orders", icon: ShoppingBag, color: "bg-blue-50 text-blue-600", currency: false },
-  aov: { label: "Avg Order Value", icon: BarChart2, color: "bg-orange-50 text-orange-600", currency: true },
-  customers: { label: "Customers", icon: Users, color: "bg-purple-50 text-purple-600", currency: false },
+  sales: {
+    label: "Total Sales",
+    icon: DollarSign,
+    color: "bg-green-50 text-green-600",
+    currency: true,
+  },
+  orders: {
+    label: "Total Orders",
+    icon: ShoppingBag,
+    color: "bg-blue-50 text-blue-600",
+    currency: false,
+  },
+  aov: {
+    label: "Avg Order Value",
+    icon: BarChart2,
+    color: "bg-orange-50 text-orange-600",
+    currency: true,
+  },
+  customers: {
+    label: "Customers",
+    icon: Users,
+    color: "bg-purple-50 text-purple-600",
+    currency: false,
+  },
 };
 
 const COUNTRY_META: Record<string, { flag: string; name: string }> = {
