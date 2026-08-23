@@ -67,7 +67,7 @@ export async function GET(req: NextRequest) {
         day: "numeric",
         year: "numeric",
       }),
-      total: `$${Number(o.total).toFixed(2)}`,
+      total: `$${Number(o.totalAmount).toFixed(2)}`,
       status: o.status,
     }));
 
