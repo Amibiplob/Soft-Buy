@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import clientPromise from "@/lib/db";
+import { getSellerBalance } from "@/lib/sellerBalance";
 
 export async function GET() {
   try {
@@ -16,49 +17,13 @@ export async function GET() {
     const orders = db.collection("orders");
 
     const now = new Date();
-    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
     const weekStart = new Date(now.getTime() - 6 * 86400000);
     weekStart.setHours(0, 0, 0, 0);
 
     const liveFilter = { sellerId, status: { $ne: "Cancelled" } };
 
-    const [
-      totalAgg,
-      monthAgg,
-      availableAgg,
-      pendingAgg,
-      weeklyAgg,
-      recentOrders,
-    ] = await Promise.all([
-      orders
-        .aggregate([
-          { $match: liveFilter },
-          { $group: { _id: null, total: { $sum: "$totalAmount" } } },
-        ])
-        .toArray(),
-      orders
-        .aggregate([
-          { $match: { ...liveFilter, createdAt: { $gte: monthStart } } },
-          { $group: { _id: null, total: { $sum: "$totalAmount" } } },
-        ])
-        .toArray(),
-      orders
-        .aggregate([
-          { $match: { sellerId, status: "Delivered" } },
-          { $group: { _id: null, total: { $sum: "$totalAmount" } } },
-        ])
-        .toArray(),
-      orders
-        .aggregate([
-          {
-            $match: {
-              sellerId,
-              status: { $nin: ["Cancelled", "Delivered"] },
-            },
-          },
-          { $group: { _id: null, total: { $sum: "$totalAmount" } } },
-        ])
-        .toArray(),
+    const [balance, weeklyAgg, recentOrders] = await Promise.all([
+      getSellerBalance(sellerId),
       orders
         .aggregate([
           { $match: { ...liveFilter, createdAt: { $gte: weekStart } } },
@@ -74,15 +39,6 @@ export async function GET() {
         .toArray(),
       orders.find(liveFilter).sort({ createdAt: -1 }).limit(15).toArray(),
     ]);
-
-    // No payouts collection yet. Once it exists, sum completed payouts
-    // and subtract them here instead of hardcoding 0.
-    const payoutsCompleted = 0;
-
-    const totalEarnings = totalAgg[0]?.total ?? 0;
-    const monthEarnings = monthAgg[0]?.total ?? 0;
-    const available = (availableAgg[0]?.total ?? 0) - payoutsCompleted;
-    const pending = pendingAgg[0]?.total ?? 0;
 
     const weeklyByDay = new Map(
       weeklyAgg.map((d) => [d._id as string, d.total as number]),
@@ -115,7 +71,12 @@ export async function GET() {
     });
 
     return NextResponse.json({
-      summary: { totalEarnings, monthEarnings, available, pending },
+      summary: {
+        totalEarnings: balance.totalEarnings,
+        monthEarnings: balance.monthEarnings,
+        available: balance.available,
+        pending: balance.pending,
+      },
       weeklyTrend,
       transactions,
     });
