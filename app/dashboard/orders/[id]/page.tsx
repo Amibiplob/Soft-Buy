@@ -3,11 +3,19 @@
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
-import { ChevronRight, Download, PackageX } from "lucide-react";
+import { ChevronRight, Download, PackageX, Star, Loader2 } from "lucide-react";
+import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 
 interface OrderItem {
   productId: string;
@@ -77,6 +85,12 @@ export default function OrderDetailPage() {
   const [order, setOrder] = useState<OrderDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [reviewedIds, setReviewedIds] = useState<string[]>([]);
+
+  const [reviewItem, setReviewItem] = useState<OrderItem | null>(null);
+  const [rating, setRating] = useState(0);
+  const [comment, setComment] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     let ignore = false;
@@ -90,6 +104,14 @@ export default function OrderDetailPage() {
         if (!res.ok) throw new Error("Failed to load order");
         const data: OrderDetail = await res.json();
         if (!ignore) setOrder(data);
+
+        if (!ignore && data.status === "Delivered") {
+          const reviewsRes = await fetch(`/api/reviews?orderId=${data.id}`);
+          if (reviewsRes.ok) {
+            const reviewsJson = await reviewsRes.json();
+            if (!ignore) setReviewedIds(reviewsJson.reviewedProductIds ?? []);
+          }
+        }
       } catch (err) {
         if (!ignore) {
           setError(err instanceof Error ? err.message : "Something went wrong");
@@ -104,6 +126,49 @@ export default function OrderDetailPage() {
       ignore = true;
     };
   }, [id]);
+
+  const openReview = (item: OrderItem) => {
+    setReviewItem(item);
+    setRating(0);
+    setComment("");
+  };
+
+  const submitReview = async () => {
+    if (!order || !reviewItem) return;
+    if (rating < 1) {
+      toast.error("Pick a star rating");
+      return;
+    }
+    if (comment.trim().length < 5) {
+      toast.error("Say a bit more about the product");
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      const res = await fetch("/api/reviews", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          orderId: order.id,
+          productId: reviewItem.productId,
+          rating,
+          comment: comment.trim(),
+        }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error);
+      toast.success("Review submitted");
+      setReviewedIds((prev) => [...prev, reviewItem.productId]);
+      setReviewItem(null);
+    } catch (err) {
+      toast.error(
+        err instanceof Error ? err.message : "Failed to submit review",
+      );
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   if (loading) return <OrderDetailSkeleton />;
 
@@ -159,6 +224,8 @@ export default function OrderDetailPage() {
       : order.paymentMethod === "paypal"
         ? "PayPal"
         : "COD";
+
+  const canReview = order.status === "Delivered";
 
   return (
     <div className="space-y-5">
@@ -226,6 +293,11 @@ export default function OrderDetailPage() {
                       <th className="text-right px-5 py-3 text-xs font-semibold text-gray-500 uppercase">
                         Subtotal
                       </th>
+                      {canReview && (
+                        <th className="text-right px-5 py-3 text-xs font-semibold text-gray-500 uppercase">
+                          Review
+                        </th>
+                      )}
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100">
@@ -259,6 +331,25 @@ export default function OrderDetailPage() {
                         <td className="px-5 py-4 text-right font-semibold text-gray-900">
                           {fmt(item.price * item.quantity)}
                         </td>
+                        {canReview && (
+                          <td className="px-5 py-4 text-right">
+                            {reviewedIds.includes(item.productId) ? (
+                              <Badge
+                                variant="outline"
+                                className="bg-green-100 text-green-700 border-green-200 text-xs"
+                              >
+                                Reviewed
+                              </Badge>
+                            ) : (
+                              <button
+                                onClick={() => openReview(item)}
+                                className="text-xs font-medium text-green-600 hover:underline"
+                              >
+                                Write a Review
+                              </button>
+                            )}
+                          </td>
+                        )}
                       </tr>
                     ))}
                   </tbody>
@@ -269,35 +360,23 @@ export default function OrderDetailPage() {
                 <h3 className="text-sm font-semibold text-gray-700 mb-3">
                   Order Summary
                 </h3>
-                <div className="space-y-2 text-sm">
-                  <div className="flex justify-between text-gray-600">
+                <div className="space-y-1.5 text-sm max-w-xs ml-auto">
+                  <div className="flex justify-between text-gray-500">
                     <span>Subtotal</span>
                     <span>{fmt(order.subtotal)}</span>
                   </div>
-                  <div className="flex justify-between text-gray-600">
+                  <div className="flex justify-between text-gray-500">
                     <span>Shipping</span>
-                    <span
-                      className={
-                        order.shippingCost === 0
-                          ? "text-green-600 font-medium"
-                          : undefined
-                      }
-                    >
-                      {order.shippingCost === 0
-                        ? "Free"
-                        : fmt(order.shippingCost)}
-                    </span>
+                    <span>{fmt(order.shippingCost)}</span>
                   </div>
-                  <div className="flex justify-between text-gray-600">
+                  <div className="flex justify-between text-gray-500">
                     <span>Tax</span>
                     <span>{fmt(order.tax)}</span>
                   </div>
                   <Separator className="my-2" />
                   <div className="flex justify-between font-bold text-gray-900 text-base">
                     <span>Total</span>
-                    <span className="text-green-600">
-                      {fmt(order.totalAmount)}
-                    </span>
+                    <span>{fmt(order.totalAmount)}</span>
                   </div>
                 </div>
               </div>
@@ -308,7 +387,7 @@ export default function OrderDetailPage() {
         <div className="space-y-4">
           <Card className="border-gray-200 shadow-sm">
             <CardHeader className="pb-3">
-              <CardTitle className="text-base font-semibold text-gray-900">
+              <CardTitle className="text-sm font-semibold text-gray-900">
                 Shipping Address
               </CardTitle>
             </CardHeader>
@@ -324,15 +403,17 @@ export default function OrderDetailPage() {
                 {order.shippingAddress.city}, {order.shippingAddress.state}
               </p>
               <p>{order.shippingAddress.country}</p>
-              <p className="mt-2">{order.shippingAddress.phone}</p>
-              <p className="text-gray-400">{order.shippingAddress.email}</p>
+              <p className="pt-1 text-gray-500">
+                {order.shippingAddress.phone}
+              </p>
+              <p className="text-gray-500">{order.shippingAddress.email}</p>
             </CardContent>
           </Card>
 
           <Card className="border-gray-200 shadow-sm">
             <CardHeader className="pb-3">
-              <CardTitle className="text-base font-semibold text-gray-900">
-                Payment Method
+              <CardTitle className="text-sm font-semibold text-gray-900">
+                Payment
               </CardTitle>
             </CardHeader>
             <CardContent className="text-sm text-gray-600 space-y-2">
@@ -342,16 +423,61 @@ export default function OrderDetailPage() {
                 </div>
                 <span>{paymentLabel}</span>
               </div>
-              <p className="text-gray-500 text-xs">Placed on {placedOn}</p>
-              <Separator className="my-2" />
-              <div className="flex justify-between font-bold text-gray-900">
-                <span>Total Paid</span>
-                <span className="text-green-600">{fmt(order.totalAmount)}</span>
-              </div>
             </CardContent>
           </Card>
         </div>
       </div>
+
+      <Dialog
+        open={!!reviewItem}
+        onOpenChange={(open) => !open && setReviewItem(null)}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Review {reviewItem?.name}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3 py-2">
+            <div className="flex gap-1">
+              {[1, 2, 3, 4, 5].map((i) => (
+                <button key={i} onClick={() => setRating(i)} type="button">
+                  <Star
+                    className={`w-6 h-6 ${
+                      i <= rating
+                        ? "fill-amber-400 text-amber-400"
+                        : "text-gray-200"
+                    }`}
+                  />
+                </button>
+              ))}
+            </div>
+            <textarea
+              value={comment}
+              onChange={(e) => setComment(e.target.value)}
+              placeholder="What did you think of this product?"
+              rows={4}
+              className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500/30 focus:border-green-400 resize-none"
+            />
+          </div>
+          <DialogFooter className="gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setReviewItem(null)}
+            >
+              Cancel
+            </Button>
+            <Button
+              size="sm"
+              onClick={submitReview}
+              disabled={submitting}
+              className="bg-green-600 hover:bg-green-700 text-white gap-1.5"
+            >
+              {submitting && <Loader2 className="w-3.5 h-3.5 animate-spin" />}{" "}
+              Submit Review
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
