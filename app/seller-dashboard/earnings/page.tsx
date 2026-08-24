@@ -12,6 +12,7 @@ import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { useRouter } from "next/navigation";
 
 interface EarningsData {
   summary: {
@@ -53,6 +54,7 @@ function EarningsChart({ data }: { data: number[] }) {
 }
 
 export default function EarningsPage() {
+  const router = useRouter();
   const [data, setData] = useState<EarningsData | null>(null);
   const [loading, setLoading] = useState(true);
   const monthLabel = new Date().toLocaleDateString("en-US", {
@@ -186,7 +188,7 @@ export default function EarningsPage() {
             </div>
             <Button
               className="w-full bg-green-600 hover:bg-green-700 text-white gap-2 text-sm"
-              onClick={() => toast("Payouts aren't set up yet — coming soon.")}
+              onClick={() => router.push("/seller-dashboard/payouts")}
             >
               <ArrowUpRight className="w-4 h-4" /> Request Payout
             </Button>
