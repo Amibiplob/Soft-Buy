@@ -5,6 +5,42 @@ import clientPromise from "@/lib/db";
 import type { OrderDocument } from "@/types/order";
 import type { ReviewDocument } from "@/types/review";
 
+export async function GET(req: NextRequest) {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const orderId = req.nextUrl.searchParams.get("orderId");
+    if (!orderId) {
+      return NextResponse.json(
+        { error: "orderId is required" },
+        { status: 400 },
+      );
+    }
+
+    const client = await clientPromise;
+    const db = client.db();
+
+    const reviewed = await db
+      .collection<ReviewDocument>("reviews")
+      .find({ orderId, buyerId: session.user.id })
+      .project({ productId: 1 })
+      .toArray();
+
+    return NextResponse.json({
+      reviewedProductIds: reviewed.map((r) => r.productId as string),
+    });
+  } catch (err) {
+    console.error("GET /api/reviews error:", err);
+    return NextResponse.json(
+      { error: "Failed to fetch reviews" },
+      { status: 500 },
+    );
+  }
+}
+
 export async function POST(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
