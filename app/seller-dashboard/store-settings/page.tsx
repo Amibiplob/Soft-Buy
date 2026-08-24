@@ -54,7 +54,7 @@ const emptyBusiness: StoreBusiness = {
 
 async function saveSection(
   section: "profile" | "social" | "business",
-  data: Record<string, unknown>,
+  data: StoreProfile | StoreSocial | StoreBusiness,
 ) {
   const res = await fetch("/api/seller/store", {
     method: "PATCH",
