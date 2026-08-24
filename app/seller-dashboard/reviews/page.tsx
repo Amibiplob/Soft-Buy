@@ -1,53 +1,39 @@
+"use client";
+
+import { useEffect, useState } from "react";
 import { Star, ThumbsUp, MessageSquare } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 
-const reviews = [
-  {
-    id: 1,
-    customer: "John Doe",
-    rating: 5,
-    product: "Wireless Headphones",
-    date: "May 15, 2025",
-    comment:
-      "Amazing sound quality! Exceeded my expectations. The noise cancellation is top-notch.",
-    avatar: "JD",
-    status: "Published",
-  },
-  {
-    id: 2,
-    customer: "Jane Smith",
-    rating: 4,
-    product: "Smart Watch",
-    date: "May 14, 2025",
-    comment:
-      "Great watch but battery could be better. Overall satisfied with the purchase.",
-    avatar: "JS",
-    status: "Published",
-  },
-  {
-    id: 3,
-    customer: "Robert Brown",
-    rating: 5,
-    product: "Travel Backpack",
-    date: "May 13, 2025",
-    comment: "Perfect for travel! Spacious and well-built. Highly recommend.",
-    avatar: "RB",
-    status: "Published",
-  },
-  {
-    id: 4,
-    customer: "Emily Davis",
-    rating: 3,
-    product: "Running Shoes",
-    date: "May 12, 2025",
-    comment:
-      "Decent shoes but sizing runs a bit large. Make sure to order half a size down.",
-    avatar: "ED",
-    status: "Pending",
-  },
-];
+interface Review {
+  id: string;
+  customer: string;
+  product: string;
+  rating: number;
+  comment: string;
+  status: "Published" | "Pending";
+  date: string;
+}
+
+interface ReviewsData {
+  reviews: Review[];
+  summary: {
+    total: number;
+    avgRating: number;
+    distribution: { stars: number; count: number }[];
+  };
+}
+
+function initials(name: string) {
+  return name
+    .split(" ")
+    .map((p) => p[0])
+    .filter(Boolean)
+    .slice(0, 2)
+    .join("")
+    .toUpperCase();
+}
 
 function Stars({
   rating,
@@ -69,27 +55,51 @@ function Stars({
   );
 }
 
-const avgRating = (
-  reviews.reduce((s, r) => s + r.rating, 0) / reviews.length
-).toFixed(1);
-const dist = [5, 4, 3, 2, 1].map((s) => ({
-  s,
-  count: reviews.filter((r) => r.rating === s).length,
-}));
-
 export default function ReviewsPage() {
+  const [data, setData] = useState<ReviewsData | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let active = true;
+    fetch("/api/seller/reviews")
+      .then((res) => res.json())
+      .then((json) => {
+        if (active) setData(json);
+      })
+      .finally(() => active && setLoading(false));
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  if (loading || !data) {
+    return (
+      <div className="space-y-5 animate-pulse">
+        <div className="h-6 w-32 bg-gray-200 rounded" />
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+          <div className="h-40 bg-gray-100 rounded-xl" />
+          <div className="h-40 bg-gray-100 rounded-xl lg:col-span-2" />
+        </div>
+        <div className="h-32 bg-gray-100 rounded-xl" />
+      </div>
+    );
+  }
+
+  const { reviews, summary } = data;
+
   return (
     <div className="space-y-5">
       <h1 className="text-2xl font-bold text-gray-900">Reviews</h1>
 
-      {/* Summary */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
         <Card className="border-gray-200 shadow-sm">
           <CardContent className="p-5 flex flex-col items-center justify-center text-center gap-2">
-            <p className="text-5xl font-bold text-gray-900">{avgRating}</p>
-            <Stars rating={Math.round(Number(avgRating))} size="md" />
+            <p className="text-5xl font-bold text-gray-900">
+              {summary.total > 0 ? summary.avgRating.toFixed(1) : "—"}
+            </p>
+            <Stars rating={Math.round(summary.avgRating)} size="md" />
             <p className="text-sm text-gray-500">
-              {reviews.length} reviews total
+              {summary.total} reviews total
             </p>
           </CardContent>
         </Card>
@@ -101,16 +111,20 @@ export default function ReviewsPage() {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-2">
-            {dist.map(({ s, count }) => (
-              <div key={s} className="flex items-center gap-3">
+            {summary.distribution.map(({ stars, count }) => (
+              <div key={stars} className="flex items-center gap-3">
                 <span className="text-xs text-gray-500 w-4 text-right">
-                  {s}
+                  {stars}
                 </span>
                 <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
                 <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
                   <div
                     className="h-full bg-amber-400 rounded-full transition-all"
-                    style={{ width: `${(count / reviews.length) * 100}%` }}
+                    style={{
+                      width: summary.total
+                        ? `${(count / summary.total) * 100}%`
+                        : "0%",
+                    }}
                   />
                 </div>
                 <span className="text-xs text-gray-500 w-4">{count}</span>
@@ -120,8 +134,15 @@ export default function ReviewsPage() {
         </Card>
       </div>
 
-      {/* Reviews List */}
       <div className="space-y-3">
+        {reviews.length === 0 && (
+          <Card className="border-gray-200 shadow-sm">
+            <CardContent className="p-10 text-center text-sm text-gray-400">
+              No reviews yet. They&apos;ll show up here once buyers review a
+              delivered order.
+            </CardContent>
+          </Card>
+        )}
         {reviews.map((r) => (
           <Card
             key={r.id}
@@ -131,7 +152,7 @@ export default function ReviewsPage() {
               <div className="flex items-start gap-4">
                 <Avatar className="w-10 h-10 shrink-0">
                   <AvatarFallback className="bg-green-100 text-green-700 text-xs font-bold">
-                    {r.avatar}
+                    {initials(r.customer)}
                   </AvatarFallback>
                 </Avatar>
                 <div className="flex-1 min-w-0">
