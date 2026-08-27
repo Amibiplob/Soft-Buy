@@ -44,12 +44,14 @@ export const authOptions: AuthOptions = {
   ],
 
   callbacks: {
-    async jwt({ token, user }) {
+    async jwt({ token, user, trigger, session }) {
       if (user) {
         token.id = user.id;
         token.role = user.role;
       }
-
+      if (trigger === "update" && session?.role) {
+        token.role = session.role; // picked up from client-side update() call below
+      }
       return token;
     },
 
