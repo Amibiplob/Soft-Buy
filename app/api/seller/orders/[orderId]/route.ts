@@ -9,103 +9,92 @@ import {
 } from "@/lib/orderStatus";
 import type { OrderDocument } from "@/types/order";
 
+export async function GET(
+  _req: NextRequest,
+  { params }: { params: Promise<{ orderId: string }> },
+) {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const { orderId } = await params;
+
+  const client = await clientPromise;
+  const db = client.db();
+  const order = await db
+    .collection<OrderDocument>("orders")
+    .findOne({ orderId, sellerId: session.user.id });
+
+  if (!order) {
+    return NextResponse.json({ error: "Order not found" }, { status: 404 });
+  }
+
+  return NextResponse.json(order);
+}
+
 export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ orderId: string }> },
 ) {
-  try {
-    const session = await getServerSession(authOptions);
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
 
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+  const { orderId } = await params;
+  const body = (await req.json()) as {
+    status?: OrderStatus;
+    trackingNumber?: string;
+    carrier?: string;
+    sellerNote?: string;
+  };
 
-    const { orderId } = await params;
+  const client = await clientPromise;
+  const db = client.db();
+  const orders = db.collection<OrderDocument>("orders");
 
-    const body = (await req.json()) as {
-      status?: unknown;
-    };
+  const order = await orders.findOne({ orderId, sellerId: session.user.id });
+  if (!order) {
+    return NextResponse.json({ error: "Order not found" }, { status: 404 });
+  }
 
-    const status = body.status;
+  const update: Record<string, unknown> = { updatedAt: new Date() };
 
-    if (
-      typeof status !== "string" ||
-      !ORDER_STATUSES.includes(status as OrderStatus)
-    ) {
+  if (body.status) {
+    if (!ORDER_STATUSES.includes(body.status)) {
       return NextResponse.json({ error: "Invalid status" }, { status: 400 });
     }
-
-    const nextStatus = status as OrderStatus;
-
-    const client = await clientPromise;
-    const db = client.db();
-
-    const ordersCollection = db.collection<OrderDocument>("orders");
-
-    const order = await ordersCollection.findOne({
-      orderId,
-      sellerId: session.user.id,
-    });
-
-    if (!order) {
-      return NextResponse.json({ error: "Order not found" }, { status: 404 });
-    }
-
-    const currentStatus = order.status;
-
-    const allowedNext = STATUS_TRANSITIONS[currentStatus] ?? [];
-
-    if (!allowedNext.includes(nextStatus)) {
+    const allowed = STATUS_TRANSITIONS[order.status] ?? [];
+    if (!allowed.includes(body.status)) {
       return NextResponse.json(
         {
-          error: `Cannot move order from "${currentStatus}" to "${nextStatus}"`,
+          error: `Cannot move order from "${order.status}" to "${body.status}"`,
         },
         { status: 400 },
       );
     }
-
-    const now = new Date();
-
-    const result = await ordersCollection.updateOne(
-      {
-        orderId,
-        sellerId: session.user.id,
-        status: currentStatus,
-      },
-      {
-        $set: {
-          status: nextStatus,
-          updatedAt: now,
-        },
-        $push: {
-          statusHistory: {
-            status: nextStatus,
-            changedAt: now,
-          },
-        },
-      },
-    );
-
-    if (result.matchedCount === 0) {
-      return NextResponse.json(
-        {
-          error:
-            "Order was modified by another request. Please refresh and try again.",
-        },
-        { status: 409 },
-      );
-    }
-
-    return NextResponse.json({
-      success: true,
-      status: nextStatus,
-    });
-  } catch (error) {
-    console.error("PATCH /api/seller/orders/[orderId] error:", error);
-
-    return NextResponse.json(
-      { error: "Failed to update order" },
-      { status: 500 },
-    );
+    update.status = body.status;
   }
+
+  if (body.trackingNumber !== undefined)
+    update.trackingNumber = body.trackingNumber.trim();
+  if (body.carrier !== undefined) update.carrier = body.carrier.trim();
+  if (body.sellerNote !== undefined) update.sellerNote = body.sellerNote.trim();
+
+  await orders.updateOne(
+    { orderId, sellerId: session.user.id },
+    {
+      $set: update,
+      ...(body.status
+        ? {
+            $push: {
+              statusHistory: { status: body.status, changedAt: new Date() },
+            },
+          }
+        : {}),
+    },
+  );
+
+  return NextResponse.json({ success: true });
 }
