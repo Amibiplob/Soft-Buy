@@ -277,7 +277,9 @@ export default function SellerOrdersPage() {
                           </td>
                           <td className="px-5 py-3.5">
                             <div className="flex items-center gap-1.5">
-                              <Link href={`/seller/orders/${o.orderId}`}>
+                              <Link
+                                href={`/seller-dashboard/orders/${o.orderId}`}
+                              >
                                 <Button
                                   variant="ghost"
                                   size="sm"

@@ -55,6 +55,10 @@ export interface OrderDocument {
 
   cardLast4?: string;
 
+  trackingNumber?: string;
+  carrier?: string;
+  sellerNote?: string;
+
   createdAt: Date;
   updatedAt: Date;
 }
