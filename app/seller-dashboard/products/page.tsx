@@ -30,7 +30,7 @@ interface ProductRow {
   category: string;
   price: number;
   stock: number;
-  status: "Active" | "Out of Stock";
+  status: "Active" | "Inactive" | "Out of Stock";
   image: string;
 }
 
@@ -44,6 +44,7 @@ interface ProductsResponse {
 
 const statusStyle: Record<string, string> = {
   Active: "bg-green-100 text-green-700 border-green-200",
+  Inactive: "bg-gray-100 text-gray-600 border-gray-200",
   "Out of Stock": "bg-red-100 text-red-700 border-red-200",
 };
 
@@ -85,25 +86,6 @@ export default function ProductsPage() {
   }, [search]);
 
   const fetchProducts = useCallback(async () => {
-    // "Inactive" isn't a real status yet — the schema has no active/inactive
-    // flag, so that tab always shows an empty state instead of hitting the API.
-    if (tab === "Inactive") {
-      setData((prev) => ({
-        products: [],
-        counts: prev?.counts ?? {
-          All: 0,
-          Active: 0,
-          Inactive: 0,
-          OutOfStock: 0,
-        },
-        total: 0,
-        page: 1,
-        totalPages: 1,
-      }));
-      setLoading(false);
-      return;
-    }
-
     setLoading(true);
     setError(null);
     try {
@@ -149,6 +131,7 @@ export default function ProductsPage() {
         stock: String(p.stock ?? ""),
         description: p.description ?? "",
         image: p.image ?? "",
+        active: p.active !== false,
       });
     } catch (err) {
       setFormError(
@@ -176,10 +159,13 @@ export default function ProductsPage() {
         stock: Number(form.stock),
         description: form.description,
         image: form.image,
+        active: form.active,
       };
 
       const res = await fetch(
-        editingId ? `/api/products/${editingId}` : "/api/products",
+        editingId
+          ? `/api/seller/products/${editingId}`
+          : "/api/seller/products",
         {
           method: editingId ? "PATCH" : "POST",
           headers: { "Content-Type": "application/json" },
@@ -204,7 +190,9 @@ export default function ProductsPage() {
     if (!confirm("Delete this product? This can't be undone.")) return;
     setDeletingId(id);
     try {
-      const res = await fetch(`/api/products/${id}`, { method: "DELETE" });
+      const res = await fetch(`/api/seller/products/${id}`, {
+        method: "DELETE",
+      });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || "Failed to delete product");
       fetchProducts();
@@ -225,7 +213,6 @@ export default function ProductsPage() {
 
   return (
     <div className="space-y-5">
-      {/* Header */}
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-gray-900">My Products</h1>
         <Button
@@ -236,7 +223,6 @@ export default function ProductsPage() {
         </Button>
       </div>
 
-      {/* Tabs */}
       <div className="flex gap-1.5 overflow-x-auto pb-0.5">
         {TABS.map((t) => (
           <button
@@ -275,10 +261,6 @@ export default function ProductsPage() {
             <div className="flex items-center justify-center py-12 text-gray-400">
               <Loader2 className="w-5 h-5 animate-spin" />
             </div>
-          ) : tab === "Inactive" ? (
-            <p className="px-5 py-10 text-center text-xs text-gray-400">
-              No inactive products.
-            </p>
           ) : (
             <>
               <div className="overflow-x-auto">
@@ -329,37 +311,6 @@ export default function ProductsPage() {
                             ) : (
                               <div className="w-10 h-10 rounded-lg bg-gray-100 shrink-0" />
                             )}
-                            <div className="flex items-center justify-between rounded-lg border border-gray-200 px-3 py-2.5">
-                              <div>
-                                <Label className="text-xs font-medium">
-                                  Store visibility
-                                </Label>
-                                <p className="text-[11px] text-gray-400 mt-0.5">
-                                  Inactive products are hidden from buyers and
-                                  won&apos;t show up in search or your
-                                  storefront.
-                                </p>
-                              </div>
-                              <button
-                                type="button"
-                                role="switch"
-                                aria-checked={form.active}
-                                onClick={() =>
-                                  setForm({ ...form, active: !form.active })
-                                }
-                                className={`shrink-0 relative w-9 h-5 rounded-full transition-colors ${
-                                  form.active ? "bg-green-600" : "bg-gray-300"
-                                }`}
-                              >
-                                <span
-                                  className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full transition-transform ${
-                                    form.active
-                                      ? "translate-x-4"
-                                      : "translate-x-0"
-                                  }`}
-                                />
-                              </button>
-                            </div>
                             <span className="font-semibold text-gray-800">
                               {p.name}
                             </span>
@@ -454,7 +405,6 @@ export default function ProductsPage() {
         </CardContent>
       </Card>
 
-      {/* Add / Edit Product Dialog */}
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="sm:max-w-lg">
           <DialogHeader>
@@ -528,6 +478,26 @@ export default function ProductsPage() {
                 placeholder="https://…"
                 className="h-9 text-sm"
               />
+            </div>
+            <div className="flex items-center justify-between rounded-lg border border-gray-200 px-3 py-2.5">
+              <div>
+                <Label className="text-xs font-medium">Store visibility</Label>
+                <p className="text-[11px] text-gray-400 mt-0.5">
+                  Inactive products are hidden from buyers and won&apos;t show
+                  up in search or your storefront.
+                </p>
+              </div>
+              <button
+                type="button"
+                role="switch"
+                aria-checked={form.active}
+                onClick={() => setForm({ ...form, active: !form.active })}
+                className={`shrink-0 relative w-9 h-5 rounded-full transition-colors ${form.active ? "bg-green-600" : "bg-gray-300"}`}
+              >
+                <span
+                  className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full transition-transform ${form.active ? "translate-x-4" : "translate-x-0"}`}
+                />
+              </button>
             </div>
           </div>
           <DialogFooter className="gap-2">
