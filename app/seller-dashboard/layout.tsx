@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { signOut } from "next-auth/react";
 import {
   LayoutDashboard,
   Package,
@@ -28,7 +29,7 @@ interface NavItem {
   title: string;
   href: string;
   icon: React.ElementType;
-  badge?: number;
+  badgeKey?: "pendingOrders";
 }
 
 interface NavGroup {
@@ -51,7 +52,7 @@ const navGroups: NavGroup[] = [
         title: "Orders",
         href: "/seller-dashboard/orders",
         icon: ShoppingBag,
-        badge: 8,
+        badgeKey: "pendingOrders",
       },
       { title: "Coupons", href: "/seller-dashboard/coupons", icon: Tag },
     ],
@@ -66,12 +67,7 @@ const navGroups: NavGroup[] = [
       },
       { title: "Earnings", href: "/seller-dashboard/earnings", icon: Wallet },
       { title: "Payouts", href: "/seller-dashboard/payouts", icon: Landmark },
-      {
-        title: "Reviews",
-        href: "/seller-dashboard/reviews",
-        icon: Star,
-        badge: 3,
-      },
+      { title: "Reviews", href: "/seller-dashboard/reviews", icon: Star },
     ],
   },
   {
@@ -86,13 +82,44 @@ const navGroups: NavGroup[] = [
   },
 ];
 
+interface NavInfo {
+  storeName: string;
+  logo: string;
+  pendingOrders: number;
+}
+
 export default function SellerLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
+  const router = useRouter();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [navInfo, setNavInfo] = useState<NavInfo | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    fetch("/api/seller/nav-info")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((json) => {
+        if (active && json) setNavInfo(json);
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, [pathname]);
+
+  const handleLogout = async () => {
+    await signOut({ redirect: false });
+    router.push("/login");
+    router.refresh();
+  };
+
+  const badgeValues: Record<string, number> = {
+    pendingOrders: navInfo?.pendingOrders ?? 0,
+  };
 
   return (
     <div className="min-h-screen bg-background flex items-start container mx-auto">
@@ -141,14 +168,19 @@ export default function SellerLayout({
         <div className="px-3 pt-4">
           <div className="flex items-center gap-3 rounded-xl bg-sidebar-accent/60 p-3">
             <Avatar className="h-9 w-9 shrink-0">
-              <AvatarImage src="/seller-avatar.png" />
+              <AvatarImage src={navInfo?.logo || undefined} />
               <AvatarFallback className="bg-primary text-primary-foreground font-semibold text-sm">
-                SB
+                {(navInfo?.storeName || "SB")
+                  .split(" ")
+                  .map((w) => w[0])
+                  .join("")
+                  .slice(0, 2)
+                  .toUpperCase()}
               </AvatarFallback>
             </Avatar>
             <div className="min-w-0 flex-1">
               <p className="text-sm font-semibold text-sidebar-foreground truncate">
-                SoftBuy Store
+                {navInfo?.storeName || "Your Store"}
               </p>
               <p className="flex items-center gap-1.5 text-[11px] text-sidebar-foreground/60">
                 <span className="h-1.5 w-1.5 rounded-full bg-primary" />
@@ -160,10 +192,12 @@ export default function SellerLayout({
 
         {/* Add product */}
         <div className="px-3 pt-3">
-          <Button className="w-full justify-center gap-2 bg-primary text-primary-foreground hover:bg-primary/90">
-            <Plus className="w-4 h-4" />
-            Add Product
-          </Button>
+          <Link href="/seller-dashboard/products">
+            <Button className="w-full justify-center gap-2 bg-primary text-primary-foreground hover:bg-primary/90">
+              <Plus className="w-4 h-4" />
+              Add Product
+            </Button>
+          </Link>
         </div>
 
         {/* Navigation */}
@@ -202,9 +236,9 @@ export default function SellerLayout({
                         <item.icon className="w-4.5 h-4.5 shrink-0" />
                         <span className="text-sm truncate">{item.title}</span>
                       </span>
-                      {!!item.badge && (
+                      {item.badgeKey && badgeValues[item.badgeKey] > 0 && (
                         <span className="font-mono text-[10px] font-semibold bg-amber-500 text-white rounded-full h-4.5 min-w-4.5 px-1 flex items-center justify-center shrink-0">
-                          {item.badge}
+                          {badgeValues[item.badgeKey]}
                         </span>
                       )}
                     </Link>
@@ -218,6 +252,7 @@ export default function SellerLayout({
         {/* Logout */}
         <div className="border-t border-sidebar-border p-3 shrink-0">
           <Button
+            onClick={handleLogout}
             variant="ghost"
             className="w-full justify-start gap-2 text-sidebar-foreground/70 hover:text-red-600 hover:bg-red-500/10"
           >
