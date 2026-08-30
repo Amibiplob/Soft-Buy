@@ -54,6 +54,7 @@ const emptyForm = {
   stock: "",
   description: "",
   image: "",
+  active: true,
 };
 
 const money = (n: number) => `$${n.toFixed(2)}`;
@@ -328,6 +329,37 @@ export default function ProductsPage() {
                             ) : (
                               <div className="w-10 h-10 rounded-lg bg-gray-100 shrink-0" />
                             )}
+                            <div className="flex items-center justify-between rounded-lg border border-gray-200 px-3 py-2.5">
+                              <div>
+                                <Label className="text-xs font-medium">
+                                  Store visibility
+                                </Label>
+                                <p className="text-[11px] text-gray-400 mt-0.5">
+                                  Inactive products are hidden from buyers and
+                                  won&apos;t show up in search or your
+                                  storefront.
+                                </p>
+                              </div>
+                              <button
+                                type="button"
+                                role="switch"
+                                aria-checked={form.active}
+                                onClick={() =>
+                                  setForm({ ...form, active: !form.active })
+                                }
+                                className={`shrink-0 relative w-9 h-5 rounded-full transition-colors ${
+                                  form.active ? "bg-green-600" : "bg-gray-300"
+                                }`}
+                              >
+                                <span
+                                  className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full transition-transform ${
+                                    form.active
+                                      ? "translate-x-4"
+                                      : "translate-x-0"
+                                  }`}
+                                />
+                              </button>
+                            </div>
                             <span className="font-semibold text-gray-800">
                               {p.name}
                             </span>

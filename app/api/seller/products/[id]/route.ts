@@ -92,7 +92,7 @@ export async function PATCH(req: NextRequest, context: Context) {
       }
       update.stock = stock;
     }
-
+    if (body.active !== undefined) update.active = Boolean(body.active);
     if (Object.keys(update).length === 0) {
       return NextResponse.json({ error: "Nothing to update" }, { status: 400 });
     }

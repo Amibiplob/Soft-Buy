@@ -13,4 +13,5 @@ export interface Product {
   key_features: string[];
   added_on: string;
   userId?: string;
+  active?: boolean;
 }
