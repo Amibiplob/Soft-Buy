@@ -17,7 +17,8 @@ type ProductDocument = {
   price: number;
   userId: string;
   image?: string;
-  name?: string;
+  title?: string;
+  stock: number;
 };
 
 type RequestBody = {
@@ -203,6 +204,51 @@ export async function POST(request: Request) {
     const sellerId = [...sellerIds][0];
 
     // --------------------------------------------------
+    // Reserve stock atomically (prevents overselling)
+    // --------------------------------------------------
+
+    const qtyByProduct = new Map<string, number>();
+    for (const item of items) {
+      qtyByProduct.set(
+        item.productId,
+        (qtyByProduct.get(item.productId) ?? 0) + item.quantity,
+      );
+    }
+
+    const productsCol = db.collection<ProductDocument>("products");
+    const reserved: { productId: string; qty: number }[] = [];
+
+    const rollbackReserved = async () => {
+      for (const r of reserved) {
+        await productsCol.updateOne(
+          { _id: new ObjectId(r.productId) },
+          { $inc: { stock: r.qty } },
+        );
+      }
+    };
+
+    for (const [productId, qty] of qtyByProduct) {
+      const result = await productsCol.updateOne(
+        { _id: new ObjectId(productId), stock: { $gte: qty } },
+        { $inc: { stock: -qty } },
+      );
+
+      if (result.modifiedCount === 0) {
+        await rollbackReserved();
+
+        const product = productMap.get(productId);
+        return NextResponse.json(
+          {
+            error: `Not enough stock for "${product?.title ?? "this item"}"`,
+          },
+          { status: 400 },
+        );
+      }
+
+      reserved.push({ productId, qty });
+    }
+
+    // --------------------------------------------------
     // Rebuild order items from database values
     // Never trust price/name/image sent by the client.
     // --------------------------------------------------
@@ -214,7 +260,7 @@ export async function POST(request: Request) {
         ...item,
         price: product.price,
         image: product.image ?? item.image,
-        name: product.name ?? item.name,
+        name: product.title ?? item.name,
       };
     });
 
@@ -294,7 +340,13 @@ export async function POST(request: Request) {
       updatedAt: now,
     };
 
-    await db.collection<OrderDocument>("orders").insertOne(newOrder);
+    try {
+      await db.collection<OrderDocument>("orders").insertOne(newOrder);
+    } catch (insertErr) {
+      // Order insert failed after stock was already reserved — give it back.
+      await rollbackReserved();
+      throw insertErr;
+    }
 
     return NextResponse.json(
       {
