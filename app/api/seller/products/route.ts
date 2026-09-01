@@ -1,20 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
 import clientPromise from "@/lib/db";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { getSellerSession } from "@/lib/requireSeller";
 import { Product } from "@/types/product";
 
 type StatusFilter = "All" | "Active" | "Inactive" | "OutOfStock";
 
 export async function GET(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const { session, error, status } = await getSellerSession();
+    if (!session) {
+      return NextResponse.json({ error }, { status });
     }
 
     const { searchParams } = req.nextUrl;
-    const status = (searchParams.get("status") as StatusFilter) || "All";
+    const statusFilter = (searchParams.get("status") as StatusFilter) || "All";
     const search = searchParams.get("search")?.trim() || "";
     const page = Math.max(1, Number(searchParams.get("page")) || 1);
     const limit = Math.max(1, Number(searchParams.get("limit")) || 6);
@@ -41,7 +40,7 @@ export async function GET(req: NextRequest) {
       collection.countDocuments({ ...base, ...statusMatch.Inactive }),
       collection.countDocuments({ ...base, ...statusMatch.OutOfStock }),
       collection
-        .find({ ...base, ...statusMatch[status] })
+        .find({ ...base, ...statusMatch[statusFilter] })
         .sort({ added_on: -1 })
         .skip((page - 1) * limit)
         .limit(limit)
@@ -49,11 +48,11 @@ export async function GET(req: NextRequest) {
     ]);
 
     const filteredTotal =
-      status === "All"
+      statusFilter === "All"
         ? total
-        : status === "Active"
+        : statusFilter === "Active"
           ? active
-          : status === "Inactive"
+          : statusFilter === "Inactive"
             ? inactive
             : outOfStock;
 
@@ -92,9 +91,9 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const { session, error, status } = await getSellerSession();
+    if (!session) {
+      return NextResponse.json({ error }, { status });
     }
 
     const body = await req.json();

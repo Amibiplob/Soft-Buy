@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { getSellerSession } from "@/lib/requireSeller";
 import clientPromise from "@/lib/db";
 import {
   ORDER_STATUSES,
@@ -13,9 +12,9 @@ export async function GET(
   _req: NextRequest,
   { params }: { params: Promise<{ orderId: string }> },
 ) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const { session, error, status } = await getSellerSession();
+  if (!session) {
+    return NextResponse.json({ error }, { status });
   }
 
   const { orderId } = await params;
@@ -37,9 +36,9 @@ export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ orderId: string }> },
 ) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const { session, error, status } = await getSellerSession();
+  if (!session) {
+    return NextResponse.json({ error }, { status });
   }
 
   const { orderId } = await params;

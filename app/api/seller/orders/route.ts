@@ -1,20 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
 import { ORDER_STATUSES } from "@/lib/orderStatus";
-import { authOptions } from "@/lib/auth";
+import { getSellerSession } from "@/lib/requireSeller";
 import clientPromise from "@/lib/db";
 
 export async function GET(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const { session, error, status } = await getSellerSession();
+    if (!session) {
+      return NextResponse.json({ error }, { status });
     }
 
     const sellerId = session.user.id;
     const { searchParams } = new URL(req.url);
     const search = searchParams.get("search")?.trim() || "";
-    const status = searchParams.get("status") || "All";
+    const statusFilter = searchParams.get("status") || "All";
     const page = Math.max(1, Number(searchParams.get("page")) || 1);
     const limit = Math.max(1, Number(searchParams.get("limit")) || 6);
 
@@ -41,7 +40,7 @@ export async function GET(req: NextRequest) {
     });
 
     const filter: Record<string, unknown> = { ...baseFilter };
-    if (status !== "All") filter.status = status;
+    if (statusFilter !== "All") filter.status = statusFilter;
     if (search) {
       filter.$or = [
         { orderId: { $regex: search, $options: "i" } },

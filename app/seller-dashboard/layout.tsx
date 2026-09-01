@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { signOut } from "next-auth/react";
+import { signOut, useSession } from "next-auth/react";
 import {
   LayoutDashboard,
   Package,
@@ -97,7 +97,22 @@ export default function SellerLayout({
   const router = useRouter();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [navInfo, setNavInfo] = useState<NavInfo | null>(null);
+  const { data: authSession, status: authStatus } = useSession();
 
+  useEffect(() => {
+    if (authStatus === "unauthenticated") {
+      router.replace("/login");
+    } else if (
+      authStatus === "authenticated" &&
+      authSession?.user?.role !== "seller"
+    ) {
+      router.replace("/dashboard/account");
+    }
+  }, [authStatus, authSession, router]);
+
+  if (authStatus === "loading") return null;
+  if (authStatus === "authenticated" && authSession?.user?.role !== "seller")
+    return null;
   useEffect(() => {
     let active = true;
     fetch("/api/seller/nav-info")

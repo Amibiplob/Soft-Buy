@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import clientPromise from "@/lib/db";
 import { ObjectId } from "mongodb";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { getSellerSession } from "@/lib/requireSeller";
 
 type Context = {
   params: Promise<{ id: string }>;
@@ -10,6 +9,11 @@ type Context = {
 
 export async function GET(_req: NextRequest, context: Context) {
   try {
+    const { session, error, status } = await getSellerSession();
+    if (!session) {
+      return NextResponse.json({ error }, { status });
+    }
+
     const { id } = await context.params;
 
     if (!ObjectId.isValid(id)) {
@@ -36,9 +40,9 @@ export async function GET(_req: NextRequest, context: Context) {
 
 export async function PATCH(req: NextRequest, context: Context) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const { session, error, status } = await getSellerSession();
+    if (!session) {
+      return NextResponse.json({ error }, { status });
     }
 
     const { id } = await context.params;
@@ -110,10 +114,9 @@ export async function PATCH(req: NextRequest, context: Context) {
 
 export async function DELETE(_req: NextRequest, context: Context) {
   try {
-    const session = await getServerSession(authOptions);
-
-    if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const { session, error, status } = await getSellerSession();
+    if (!session) {
+      return NextResponse.json({ error }, { status });
     }
 
     const { id } = await context.params;
