@@ -1,4 +1,6 @@
+// app/api/seller/orders/[orderId]/route.ts
 import { NextRequest, NextResponse } from "next/server";
+import { ObjectId } from "mongodb";
 import { getSellerSession } from "@/lib/requireSeller";
 import clientPromise from "@/lib/db";
 import {
@@ -74,6 +76,20 @@ export async function PATCH(
       );
     }
     update.status = body.status;
+
+    // Stock was decremented atomically when the order was placed.
+    // Cancelling releases it back to the product so it's sellable again.
+    if (body.status === "Cancelled") {
+      const productsCol = db.collection("products");
+      for (const item of order.items) {
+        if (ObjectId.isValid(item.productId)) {
+          await productsCol.updateOne(
+            { _id: new ObjectId(item.productId) },
+            { $inc: { stock: item.quantity } },
+          );
+        }
+      }
+    }
   }
 
   if (body.trackingNumber !== undefined)
