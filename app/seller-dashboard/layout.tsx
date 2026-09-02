@@ -110,9 +110,6 @@ export default function SellerLayout({
     }
   }, [authStatus, authSession, router]);
 
-  if (authStatus === "loading") return null;
-  if (authStatus === "authenticated" && authSession?.user?.role !== "seller")
-    return null;
   useEffect(() => {
     let active = true;
     fetch("/api/seller/nav-info")
@@ -125,6 +122,10 @@ export default function SellerLayout({
       active = false;
     };
   }, [pathname]);
+
+  if (authStatus === "loading") return null;
+  if (authStatus === "authenticated" && authSession?.user?.role !== "seller")
+    return null;
 
   const handleLogout = async () => {
     await signOut({ redirect: false });
