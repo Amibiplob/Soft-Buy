@@ -50,6 +50,9 @@ export async function GET(_req: NextRequest, context: Context) {
       shippingAddress: order.shippingAddress,
       paymentMethod: order.paymentMethod,
       cardLast4: order.cardLast4 ?? null,
+      trackingNumber: order.trackingNumber ?? null,
+      carrier: order.carrier ?? null,
+      sellerNote: order.sellerNote ?? null,
     });
   } catch (error) {
     console.error("GET /api/orders/[id] error:", error);

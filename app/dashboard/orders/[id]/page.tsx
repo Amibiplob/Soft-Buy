@@ -48,6 +48,9 @@ interface OrderDetail {
   shippingAddress: ShippingAddress;
   paymentMethod: "card" | "paypal" | "cod";
   cardLast4: string | null;
+  trackingNumber: string | null;
+  carrier: string | null;
+  sellerNote: string | null;
 }
 
 const statusStyles: Record<string, string> = {
@@ -425,6 +428,39 @@ export default function OrderDetailPage() {
               </div>
             </CardContent>
           </Card>
+
+          {(order.trackingNumber || order.carrier || order.sellerNote) && (
+            <Card className="border-gray-200 shadow-sm">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-semibold text-gray-900">
+                  Shipping Tracking
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="text-sm text-gray-600 space-y-2">
+                {order.carrier && (
+                  <p>
+                    <span className="text-gray-500">Carrier: </span>
+                    <span className="font-medium text-gray-900">
+                      {order.carrier}
+                    </span>
+                  </p>
+                )}
+                {order.trackingNumber && (
+                  <p>
+                    <span className="text-gray-500">Tracking #: </span>
+                    <span className="font-mono font-medium text-gray-900">
+                      {order.trackingNumber}
+                    </span>
+                  </p>
+                )}
+                {order.sellerNote && (
+                  <p className="pt-1 border-t border-gray-100 mt-2 text-gray-500">
+                    {order.sellerNote}
+                  </p>
+                )}
+              </CardContent>
+            </Card>
+          )}
         </div>
       </div>
 
