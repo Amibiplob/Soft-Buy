@@ -151,7 +151,7 @@ export default async function DashboardOverviewPage() {
               Welcome back, {session?.user?.name ?? "Guest"}
             </h1>
             <p className="text-gray-500 text-sm mt-1">
-              Here's what's happening with your account today.
+              Here&apos;s what&apos;s happening with your account today.
             </p>
           </div>
         </div>

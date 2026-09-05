@@ -144,7 +144,7 @@ export default function SellerDashboardPage() {
           <h1 className="text-2xl font-bold text-gray-900">Overview</h1>
           <p className="text-sm text-gray-500 mt-0.5">
             Welcome back{session?.user?.name ? `, ${session.user.name}` : ""}!
-            👋 Here's what's happening with your store today.
+            Here&apos;s what&apos;s happening with your store today.
           </p>
         </div>
         <span className="text-xs text-gray-400 bg-white border border-gray-200 rounded-lg px-3 py-1.5 shadow-sm hidden sm:block">

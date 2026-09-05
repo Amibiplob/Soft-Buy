@@ -6,6 +6,7 @@ import {
   useEffect,
   useState,
   ReactNode,
+  useCallback,
 } from "react";
 import { useSession } from "next-auth/react";
 
@@ -38,7 +39,7 @@ export function WishlistProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(true);
 
-  const refreshWishlist = async () => {
+  const refreshWishlist = useCallback(async () => {
     if (status !== "authenticated") {
       setItems([]);
       setFetching(false);
@@ -55,11 +56,11 @@ export function WishlistProvider({ children }: { children: ReactNode }) {
     } finally {
       setFetching(false);
     }
-  };
+  }, [status]);
 
   useEffect(() => {
     refreshWishlist();
-  }, [status]);
+  }, [refreshWishlist]);
 
   const isInWishlist = (id: string) => items.some((item) => item.id === id);
 

@@ -64,8 +64,9 @@ export default function PaymentMethodsPage() {
       setError(null);
       const res = await fetch("/api/payment-methods");
       if (!res.ok) throw new Error("Failed to load payment methods");
-      const data = await res.json();
-      setMethods(data.map((m: any) => ({ ...m, _id: m._id.toString() })));
+      const data: (PaymentMethod & { _id: { toString(): string } })[] =
+        await res.json();
+      setMethods(data.map((m) => ({ ...m, _id: m._id.toString() })));
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");
     } finally {

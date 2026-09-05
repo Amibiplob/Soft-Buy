@@ -44,7 +44,9 @@ const reviews = [
 ];
 
 // ---- Card ----
-function ReviewCard({ item }: any) {
+type ReviewItem = (typeof reviews)[number];
+
+function ReviewCard({ item }: { item: ReviewItem }) {
   return (
     <Card className="min-w-[320px] max-w-[320px] snap-start border bg-background">
       <CardContent className="p-6 flex flex-col justify-between h-full">
